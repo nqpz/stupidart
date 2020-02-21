@@ -9,9 +9,11 @@ libraries with associated header files.
 
 ## Building and running
 
-Run `make` to build.  Then run `./stupidart input.pam output.pam`.  You
-can use ImageMagick's `convert` utility to convert an image into the
-Netpbm PAM format.  Example:
+To build, run `futhark pkg sync` once, and then `make`.
+
+Run `./stupidart input.pam output.pam` to generate art.  You can use
+ImageMagick's `convert` utility to convert an image into the Netpbm PAM
+format.  Example:
 
 ```
 convert input.jpg pam:- | ./stupidart - - | convert pam:- output.png
