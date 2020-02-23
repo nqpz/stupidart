@@ -14,7 +14,7 @@ let same_dims_2d 'a [m][n][m1][n1] (_source: [m][n]a) (target: [m1][n1]a): [m][n
 
 module lys_core = {
   type sized_state [h][w] = {rng: rng, paused: bool, score: f32,
-                             shape: #triangle | #circle | #rectangle,
+                             shape: #random | #triangle | #circle | #rectangle,
                              image_source: [h][w]argb.colour,
                              image_approx: [h][w]argb.colour}
   type~ state = sized_state [][]
@@ -23,15 +23,16 @@ module lys_core = {
     let rng = rnge.rng_from_seed [seed]
     let image_approx = replicate h (replicate w 0)
     let score = reduce_comm (+) 0 (map r32 (flatten (map2 (map2 (color_diff)) image_approx image_source)))
-    in {rng, paused=false, score, shape=#triangle, image_source, image_approx}
+    in {rng, paused=false, score, shape=#random, image_source, image_approx}
 
   entry score (s: state): f32 = s.score
 
   let keydown (key: i32) (s: state) =
     if key == SDLK_SPACE then s with paused = !s.paused
-    else if key == SDLK_1 then s with shape = #triangle
-    else if key == SDLK_2 then s with shape = #circle
-    else if key == SDLK_3 then s with shape = #rectangle
+    else if key == SDLK_1 then s with shape = #random
+    else if key == SDLK_2 then s with shape = #triangle
+    else if key == SDLK_3 then s with shape = #circle
+    else if key == SDLK_4 then s with shape = #rectangle
     else s
 
   let event (e: event) (s: state): state =
@@ -41,6 +42,10 @@ module lys_core = {
       else let image_approx = same_dims_2d s.image_source s.image_approx
            let (image_approx', improved, rng') =
              match s.shape
+             case #random -> let (rng, choice) = dist_int.rand (0, 2) s.rng
+                             in if choice == 0 then triangle.add s.image_source image_approx rng
+                                else if choice == 1 then circle.add s.image_source image_approx rng
+                                else rectangle.add s.image_source image_approx rng
              case #triangle ->   triangle.add s.image_source image_approx s.rng
              case #circle ->       circle.add s.image_source image_approx s.rng
              case #rectangle -> rectangle.add s.image_source image_approx s.rng
