@@ -137,6 +137,7 @@ int main(int argc, char** argv) {
   assert(output_image != NULL);
   pam_save(output_image, ctx.data, ctx.width, ctx.height);
   assert(fclose(output_image) != EOF);
+  free(ctx.data);
 
   futhark_context_free(ctx.fut);
   futhark_context_config_free(ctx.futcfg);
