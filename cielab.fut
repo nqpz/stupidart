@@ -62,7 +62,7 @@ let cielab_pack ((l, a, b): tup3): color =
   let li = u32.i32 (int_range 0 (2**10 - 1) (10 * l))
   -- 11 bits
   let ai = u32.i32 (int_range 0 (2**11 - 1) (11 * (a - cielab_bounds.a.min)))
-  -- 11 bits (potentially overflows a small bit, but we don't care)
+  -- 11 bits (potentially overflows a little, but we don't care)
   let bi = u32.i32 (int_range 0 (2**11 - 1) (10 * (b - cielab_bounds.b.min)))
   in li << 22 | ai << 11 | bi
 
