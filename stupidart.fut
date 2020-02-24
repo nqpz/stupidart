@@ -15,15 +15,19 @@ let same_dims_2d 'a [m][n][m1][n1] (_source: [m][n]a) (target: [m1][n1]a): [m][n
 module lys_core = {
   type sized_state [h][w] = {rng: rng, paused: bool, score: f32,
                              shape: #random | #triangle | #circle | #rectangle,
-                             image_source: [h][w]argb.colour,
-                             image_approx: [h][w]argb.colour}
+                             image_source: [h][w]color,
+                             image_approx: [h][w]color}
   type~ state = sized_state [][]
 
-  entry init [h][w] (seed: i32) (image_source: [h][w]i32): state =
+  entry init [h][w] (seed: i32) (image_source: [h][w]argb.colour): state =
     let rng = rnge.rng_from_seed [seed]
-    let image_approx = replicate h (replicate w 0)
-    let score = reduce_comm (+) 0 (map r32 (flatten (map2 (map2 (color_diff)) image_approx image_source)))
-    in {rng, paused=false, score, shape=#random, image_source, image_approx}
+    let image_source' = map (map (\c -> let (r, g, b, _a) = argb.to_rgba c
+                                        in cielab_pack (srgb_to_cielab (r, g, b))))
+                            image_source
+    let black = cielab_pack (srgb_to_cielab (0, 0, 0))
+    let image_approx = replicate h (replicate w black)
+    let score = reduce_comm (+) 0 (flatten (map2 (map2 (color_diff)) image_approx image_source'))
+    in {rng, paused=false, score, shape=#random, image_source=image_source', image_approx}
 
   entry score (s: state): f32 = s.score
 
@@ -55,7 +59,9 @@ module lys_core = {
     case #keydown {key} -> keydown key s
     case _ -> s
 
-  let render (s: state): [][]i32 = s.image_approx
+  let render (s: state): [][]argb.colour =
+    map (map (\c -> let (r, g, b) = cielab_to_srgb (cielab_unpack c)
+                    in argb.from_rgba r g b 1)) s.image_approx
 
   let resize _ _ (s: state): state = s
 }

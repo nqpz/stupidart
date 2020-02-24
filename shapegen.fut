@@ -7,7 +7,7 @@ module type shape = {
 
   val n_points: t -> i32
 
-  val color: t -> argb.colour
+  val color: t -> color
 
   val coordinates: t -> i32 -> maybe (i32, i32)
 
@@ -22,7 +22,7 @@ module mk_full_shape (o: shape) = {
     case #just (y, x) -> w * y + x
     case #nothing -> -1
 
-  let render [h][w] (image: [h][w]argb.colour) (t: t): [h][w]argb.colour =
+  let render [h][w] (image: [h][w]color) (t: t): [h][w]color =
     let pixels = copy (flatten image)
     let n = o.n_points t
     let indices = map (index w t) (0..<n)
@@ -30,8 +30,8 @@ module mk_full_shape (o: shape) = {
     in unflatten h w pixels'
 
   -- XXX: Make this fast.  Maybe add multiple good shapes instead of the best one.
-  let add [h][w] (image_source: [h][w]argb.colour) (image_approx: [h][w]argb.colour)
-                 (rng: rng): ([h][w]argb.colour, f32, rng) =
+  let add [h][w] (image_source: [h][w]color) (image_approx: [h][w]color)
+                 (rng: rng): ([h][w]color, f32, rng) =
     let image_diff = map2 (map2 color_diff) image_approx image_source
     let n_tries = 1000
     let rngs = rnge.split_rng n_tries rng
@@ -43,7 +43,7 @@ module mk_full_shape (o: shape) = {
                   case #just (y, x) ->
                     let old = unsafe image_diff[y, x]
                     let new = color_diff (o.color t) (unsafe image_source[y, x])
-                    in score + r32 (old - new)
+                    in score + old - new
                   case #nothing ->
                     score
     in ((score, t), rng)

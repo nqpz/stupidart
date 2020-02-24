@@ -1,13 +1,13 @@
 import "../base"
 
 type t = {y_center: i32, x_center: i32,
-          radius: i32, color: argb.colour}
+          radius: i32, color: color}
 
 let empty: t = {y_center=0, x_center=0, radius=0, color=0}
 
 let n_points (t: t): i32 = (t.radius * 2)**2
 
-let color (t: t): argb.colour = t.color
+let color (t: t): color = t.color
 
 let coordinates (t: t) (k: i32): maybe (i32, i32) =
   let y = t.y_center - t.radius + k / (t.radius * 2)
@@ -20,6 +20,5 @@ let generate (h: i32) (w: i32) (rng: rng): (t, rng) =
   let (rng, x_center) = dist_int.rand (0, w - 1) rng
   let (rng, radius) = dist_int.rand (1, i32.min (i32.min x_center (w - x_center))
                                                 (i32.min y_center (h - y_center))) rng
-  let (rng, color) = dist_int.rand (0x00000000, 0x00ffffff) rng
-  let color = 0xff000000 | color
+  let (rng, color) = rand_color rng
   in ({y_center, x_center, radius, color}, rng)

@@ -19,7 +19,7 @@ let in_range (t: i32) (a: i32) (b: i32): bool =
 type t = {y0: i32, x0: i32,
           y1: i32, x1: i32,
           y2: i32, x2: i32,
-          color: argb.colour}
+          color: color}
 
 let empty: t = {y0=0, x0=0, y1=0, x1=0, y2=0, x2=0, color=0}
 
@@ -34,7 +34,7 @@ let n_points (t: t): i32 =
   let (y_min, y_max, x_min, x_max) = bounds t
   in (y_max - y_min + 1) * (x_max - x_min + 1)
 
-let color (t: t): argb.colour = t.color
+let color (t: t): color = t.color
 
 let coordinates (t: t) (k: i32): maybe (i32, i32) =
   let (y_min, _y_max, x_min, x_max) = bounds t
@@ -52,6 +52,5 @@ let generate (h: i32) (w: i32) (rng: rng): (t, rng) =
   let (rng, x1) = dist_int.rand (0, w - 1) rng
   let (rng, y2) = dist_int.rand (0, h - 1) rng
   let (rng, x2) = dist_int.rand (0, w - 1) rng
-  let (rng, color) = dist_int.rand (0x00000000, 0x00ffffff) rng
-  let color = 0xff000000 | color
+  let (rng, color) = rand_color rng
   in ({y0, x0, y1, x1, y2, x2, color}, rng)
