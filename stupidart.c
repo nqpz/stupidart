@@ -2,6 +2,7 @@
 
 #define _XOPEN_SOURCE
 #include <unistd.h>
+#include <getopt.h>
 #include "pam.h"
 
 #define MAX_FPS 60
