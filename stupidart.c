@@ -1,5 +1,6 @@
 #include "lib/github.com/diku-dk/lys/liblys.h"
 
+#define _XOPEN_SOURCE
 #include <unistd.h>
 #include "pam.h"
 
