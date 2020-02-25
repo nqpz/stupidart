@@ -12,11 +12,11 @@ struct internal {
 };
 
 void loop_iteration(struct lys_context *ctx, struct internal *internal) {
-  float score;
+  float diff_percent;
   char buffer[50];
   if (internal->show_text) {
-    FUT_CHECK(ctx->fut, futhark_entry_score(ctx->fut, &score, ctx->state));
-    sprintf(buffer, "Score: %.3f", score);
+    FUT_CHECK(ctx->fut, futhark_entry_diff_percent(ctx->fut, &diff_percent, ctx->state));
+    sprintf(buffer, "Difference: %.8f%%", diff_percent);
     draw_text(ctx, internal->font, FONT_SIZE, buffer,
               0xffffffff, ctx->height - FONT_SIZE - 10, 10);
   }

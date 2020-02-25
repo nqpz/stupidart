@@ -16,3 +16,7 @@ let rand_color (rng: rng): (rng, color) =
   in (rng, cielab_pack_ints (u32.i32 li, u32.i32 ai, u32.i32 bi))
 
 let color_diff: color -> color -> f32 = cielab_delta_packed
+
+let color_diff_max (c: color): f32 =
+  f32.max (color_diff (cielab_pack_ints (0, 0, 0)) c)
+          (color_diff (cielab_pack_ints (u32.i32 li_max, u32.i32 ai_max, u32.i32 bi_max)) c)
