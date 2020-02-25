@@ -18,7 +18,7 @@ endif
 libstupidart.o: libstupidart.c
 	gcc -o $@ -c $< $(NOWARN_CFLAGS)
 
-libstupidart.c: stupidart.fut $(PROG_FUT_DEPS)
+libstupidart.c: stupidart.fut $(PROG_FUT_DEPS) shapes/triangle.fut shapes/rectangle.fut shapes/circle.fut
 	futhark $(LYS_BACKEND) -o libstupidart --library stupidart.fut
 
 clean:

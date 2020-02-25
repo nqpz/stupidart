@@ -13,7 +13,7 @@ let same_dims_2d 'a [m][n][m1][n1] (_source: [m][n]a) (target: [m1][n1]a): [m][n
 
 
 module lys_core = {
-  type sized_state [h][w] = {rng: rng, paused: bool, score: f32,
+  type sized_state [h][w] = {rng: rng, paused: bool, score: f32, count: i32,
                              shape: #random | #triangle | #circle | #rectangle,
                              image_source: [h][w]color,
                              image_approx: [h][w]color}
@@ -27,7 +27,7 @@ module lys_core = {
     let black = cielab_pack (srgb_to_cielab (0, 0, 0))
     let image_approx = replicate h (replicate w black)
     let score = reduce_comm (+) 0 (flatten (map2 (map2 (color_diff)) image_approx image_source'))
-    in {rng, paused=false, score, shape=#random, image_source=image_source', image_approx}
+    in {rng, paused=false, score, shape=#random, image_source=image_source', image_approx, count=0}
 
   entry score (s: state): f32 = s.score
 
@@ -47,15 +47,16 @@ module lys_core = {
            let (image_approx', improved, rng') =
              match s.shape
              case #random -> let (rng, choice) = dist_int.rand (0, 2) s.rng
-                             in if choice == 0 then triangle.add s.image_source image_approx rng
-                                else if choice == 1 then circle.add s.image_source image_approx rng
-                                else rectangle.add s.image_source image_approx rng
-             case #triangle ->   triangle.add s.image_source image_approx s.rng
-             case #circle ->       circle.add s.image_source image_approx s.rng
-             case #rectangle -> rectangle.add s.image_source image_approx s.rng
+                             in if choice == 0 then triangle.add s.count s.image_source image_approx rng
+                                else if choice == 1 then circle.add s.count s.image_source image_approx rng
+                                else rectangle.add s.count s.image_source image_approx rng
+             case #triangle ->   triangle.add s.count s.image_source image_approx s.rng
+             case #circle ->       circle.add s.count s.image_source image_approx s.rng
+             case #rectangle -> rectangle.add s.count s.image_source image_approx s.rng
            in s with image_approx = image_approx'
                 with score = s.score - improved
                 with rng = rng'
+	        with count = s.count + 1
     case #keydown {key} -> keydown key s
     case _ -> s
 

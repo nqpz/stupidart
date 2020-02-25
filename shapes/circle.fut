@@ -15,10 +15,12 @@ let coordinates (t: t) (k: i32): maybe (i32, i32) =
   let in_circle = f32.sqrt (r32 (y - t.y_center)**2 + r32 (x - t.x_center)**2) < r32 t.radius
   in if in_circle then #just (y, x) else #nothing
 
-let generate (h: i32) (w: i32) (rng: rng): (t, rng) =
+let generate (count: i32) (h: i32) (w: i32) (rng: rng): (t, rng) =
   let (rng, y_center) = dist_int.rand (0, h - 1) rng
   let (rng, x_center) = dist_int.rand (0, w - 1) rng
-  let (rng, radius) = dist_int.rand (1, i32.min (i32.min x_center (w - x_center))
-                                                (i32.min y_center (h - y_center))) rng
+  let radius_max = i32.min (i32.min x_center (w - x_center))
+                           (i32.min y_center (h - y_center))
+  let rad_max = i32.max (i32.min radius_max 50) (radius_max - count / 100)
+  let (rng, radius) = dist_int.rand (1, rad_max) rng
   let (rng, color) = rand_color rng
   in ({y_center, x_center, radius, color}, rng)
