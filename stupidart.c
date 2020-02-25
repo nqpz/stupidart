@@ -121,7 +121,7 @@ int main(int argc, char** argv) {
   struct internal internal;
   ctx.event_handler_data = (void*) &internal;
   internal.show_text = true;
-  internal.font = TTF_OpenFont("GeneraleStationGX.ttf", FONT_SIZE);
+  internal.font = TTF_OpenFont("NeomatrixCode.ttf", FONT_SIZE);
   SDL_ASSERT(internal.font != NULL);
 
   lys_run_sdl(&ctx);
