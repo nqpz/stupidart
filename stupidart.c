@@ -20,7 +20,7 @@ void loop_iteration(struct lys_context *ctx, struct internal *internal) {
     FUT_CHECK(ctx->fut, futhark_entry_diff_percent(ctx->fut, &diff_percent, ctx->state));
     sprintf(buffer, "Difference: %.8f%%", diff_percent);
     draw_text(ctx, internal->font, FONT_SIZE, buffer,
-              0xffffffff, ctx->height - FONT_SIZE - 10, 10);
+              0xffffff00, ctx->height - FONT_SIZE - 10, 10);
   }
 }
 
