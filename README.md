@@ -1,8 +1,8 @@
+<img src="example-output-small.png" width="322" align="right">
+
 # Stupid art
 
 [![Build Status](https://travis-ci.org/nqpz/stupidart.svg?branch=master)](https://travis-ci.org/nqpz/stupidart)
-
-<img src="example-output-small.png" width="250" align="right">
 
 Approximate an input image by adding random shapes on top of each other.
 
