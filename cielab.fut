@@ -47,11 +47,24 @@ let srgb_to_cielab: tup3 -> tup3 = srgb_to_xyz >-> xyz_to_cielab
 let cielab_to_srgb: tup3 -> tup3 = cielab_to_xyz >-> xyz_to_srgb
 
 let cielab_bounds: cielab_bounds =
-  {l={min=0, max=100},
+  {l={min=0.0, max=100.0},
    a={min= -92.245224, max=91.081085},
    b={min= -113.363686, max=91.588272}}
 
-let cielab_pack_factor = 9.98f32
+let cielab_pack_factor: f32 = 9.98
+
+let li_max: i32 = t32 (cielab_pack_factor * (cielab_bounds.l.max - cielab_bounds.l.min))
+let ai_max: i32 = t32 (cielab_pack_factor * (cielab_bounds.a.max - cielab_bounds.a.min))
+let bi_max: i32 = t32 (cielab_pack_factor * (cielab_bounds.b.max - cielab_bounds.b.min))
+
+let cielab_pack_ints ((li, ai, bi): (u32, u32, u32)): u32 =
+  li << 22 | ai << 11 | bi
+
+let cielab_unpack_ints (c: u32): (u32, u32, u32) =
+  let bi = c & 0b11111111111
+  let ai = (c >> 11) & 0b11111111111
+  let li = c >> 22
+  in (li, ai, bi)
 
 let nonneg (k: i32): u32 =
   if k < 0 then 0 else u32.i32 k
@@ -63,12 +76,10 @@ let cielab_pack ((l, a, b): tup3): color =
   let ai = nonneg (t32 (cielab_pack_factor * (a - cielab_bounds.a.min)))
   -- 11 bits
   let bi = nonneg (t32 (cielab_pack_factor * (b - cielab_bounds.b.min)))
-  in li << 22 | ai << 11 | bi
+  in cielab_pack_ints (li, ai, bi)
 
 let cielab_unpack (c: color): tup3 =
-  let bi = c & 0b11111111111
-  let ai = (c >> 11) & 0b11111111111
-  let li = c >> 22
+  let (li, ai, bi) = cielab_unpack_ints c
   let b = f32.u32 bi / cielab_pack_factor + cielab_bounds.b.min
   let a = f32.u32 ai / cielab_pack_factor + cielab_bounds.a.min
   let l = f32.u32 li / cielab_pack_factor + cielab_bounds.l.min
@@ -76,3 +87,11 @@ let cielab_unpack (c: color): tup3 =
 
 let cielab_delta ((l1, a1, b1): tup3) ((l2, a2, b2): tup3): f32 =
   f32.sqrt ((l1 - l2)**2 + (a1 - a2)**2 + (b1 - b2)**2)
+
+let cielab_delta_packed (c1: color) (c2: color): f32 =
+  let unpack c =
+    let (li, ai, bi) = cielab_unpack_ints c
+    in (i32.u32 li, i32.u32 ai, i32.u32 bi)
+  let (li1, ai1, bi1) = unpack c1
+  let (li2, ai2, bi2) = unpack c2
+  in f32.sqrt (r32 ((li1 - li2)**2 + (ai1 - ai2)**2 + (bi1 - bi2)**2))
