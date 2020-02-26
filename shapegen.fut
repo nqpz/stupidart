@@ -90,12 +90,15 @@ module mk_full_shape (o: shape) = {
   --    each grid cell.
   -- 6. Write the objects to the image using render2.
 
+  let Gs = [1i32,2,3,5,7,11,13,17,19]
+
   let add [h][w] (count:i32) (image_source: [h][w]color) (image_approx: [h][w]color)
                  (rng: rng): ([h][w]color, f32, rng) =
     let image_diff = map2 (map2 color_diff) image_approx image_source
 
-    let G = 1
-    let n_tries = 100
+    --let (rng, Gi) = dist_int.rand (0,length Gs - 1) rng
+    let G = 1 -- Gs[Gi]
+    let n_tries = 1000
     let (hG,wG) = (h / G, w / G)
     let grid_cells = G*G
     let (rng, tries: [grid_cells][n_tries](i32,i32,o.t)) =
