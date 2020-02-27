@@ -1,5 +1,5 @@
 require {
   github.com/diku-dk/lys 0.1.6 #77ce3f7d2f56d8ed46dd246a0993bf78255e596d
-  github.com/diku-dk/cpprandom 1.1.9 #2e56f6982d048cdefd30472a1d069dd9a468c6a2
+  github.com/diku-dk/cpprandom 1.1.10 #c6b7082c7c8c4965a8de6b1a7c69bd493cd1e208
   github.com/diku-dk/segmented 0.2.7 #0cde0f3ae830f8436af2e019db700890bdf3b8dd
 }
