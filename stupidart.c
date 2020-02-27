@@ -21,6 +21,19 @@ void loop_iteration(struct lys_context *ctx, struct internal *internal) {
     sprintf(buffer, "Difference: %.8f%%", diff_percent);
     draw_text(ctx, internal->font, FONT_SIZE, buffer,
               0xffffff00, ctx->height - FONT_SIZE - 10, 10);
+
+    struct futhark_u8_1d *text_array;
+    FUT_CHECK(ctx->fut, futhark_entry_text(ctx->fut, &text_array, ctx->state));
+    size_t len = futhark_shape_u8_1d(ctx->fut, text_array)[0];
+    char* text = malloc(sizeof(char) * (len + 1));
+    assert(text != NULL);
+    FUT_CHECK(ctx->fut, futhark_values_u8_1d(ctx->fut, text_array, (unsigned char*) text));
+    text[len] = '\0';
+    FUT_CHECK(ctx->fut, futhark_free_u8_1d(ctx->fut, text_array));
+
+    draw_text(ctx, internal->font, FONT_SIZE, text,
+              0xffff00ff, 5, 10);
+    free(text);
   }
 }
 
