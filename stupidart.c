@@ -96,6 +96,8 @@ int main(int argc, char** argv) {
     return EXIT_FAILURE;
   }
 
+  int32_t seed = (int32_t) lys_wall_time();
+
   int width, height;
 
   FILE *input_image;
@@ -108,6 +110,7 @@ int main(int argc, char** argv) {
   int32_t* image_data = pam_load(input_image, (unsigned int*) &width, (unsigned int*) &height);
   assert(image_data != NULL);
   assert(fclose(input_image) != EOF);
+  printf("Seed: %d\n", seed);
   printf("Image dimensions: %dx%d\n", width, height);
 
   struct lys_context ctx;
@@ -119,7 +122,6 @@ int main(int argc, char** argv) {
   struct futhark_i32_2d *image_fut = futhark_new_i32_2d(ctx.fut, image_data, height, width);
   free(image_data);
 
-  int32_t seed = (int32_t) lys_wall_time();
   futhark_entry_init(ctx.fut, &ctx.state, seed, image_fut);
 
   futhark_free_i32_2d(ctx.fut, image_fut);
