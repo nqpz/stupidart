@@ -45,7 +45,7 @@ module lys_core = {
     case #step _td ->
       if s.paused then s
       else let image_approx = same_dims_2d s.image_source s.image_approx
-           let (shape : #circle | #triangle | #rectangle, rng) =
+           let (shape : #triangle | #circle | #rectangle, rng) =
              match s.shape
              case #random ->
                let (rng, choice) = dist_int.rand (0, 2) s.rng
