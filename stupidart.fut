@@ -40,11 +40,11 @@ module lys_core = {
   let reset (s:state) : state =
     state_from_image_source s.startseed s.shape s.image_source
 
-  entry diff_percent (s: state): f32 = 100 * s.diff / s.diff_max
+  let diff_percent (s: state): f32 =
+    100 * s.diff / s.diff_max
 
-  entry text (s: state) : string [] =
-    "Object type (1-4), Reset (r), \nHide text (F1), Quit (esc)\nAuto reset: " ++
-    (if s.resetwhen > 0 then "on" else "off")
+  entry text_content (s: state): (f32, bool) =
+    (diff_percent s, s.resetwhen > 0)
 
   let keydown (key: i32) (s: state) =
     if key == SDLK_SPACE then s with paused = !s.paused

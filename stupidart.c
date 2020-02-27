@@ -14,26 +14,19 @@ struct internal {
 };
 
 void loop_iteration(struct lys_context *ctx, struct internal *internal) {
-  float diff_percent;
-  char buffer[50];
   if (internal->show_text) {
-    FUT_CHECK(ctx->fut, futhark_entry_diff_percent(ctx->fut, &diff_percent, ctx->state));
-    sprintf(buffer, "Difference: %.8f%%", diff_percent);
+    float diff_percent;
+    bool auto_reset;
+    char buffer[50];
+    FUT_CHECK(ctx->fut, futhark_entry_text_content(ctx->fut, &diff_percent, &auto_reset, ctx->state));
+    sprintf(buffer, "Difference: %2.8f%%\nAuto reset: %s", diff_percent, auto_reset ? "on" : "off");
     draw_text(ctx, internal->font, FONT_SIZE, buffer,
-              0xffffff00, ctx->height - FONT_SIZE - 10, 10);
+              0xff00ffff, 10, 10);
 
-    struct futhark_u8_1d *text_array;
-    FUT_CHECK(ctx->fut, futhark_entry_text(ctx->fut, &text_array, ctx->state));
-    size_t len = futhark_shape_u8_1d(ctx->fut, text_array)[0];
-    char* text = malloc(sizeof(char) * (len + 1));
-    assert(text != NULL);
-    FUT_CHECK(ctx->fut, futhark_values_u8_1d(ctx->fut, text_array, (unsigned char*) text));
-    text[len] = '\0';
-    FUT_CHECK(ctx->fut, futhark_free_u8_1d(ctx->fut, text_array));
+    char instructions[] = "Pick shape: 1-4 | Reset: r\nHide text:  F1  | Quit:  Esc\n                | Pause: Space";
+    draw_text(ctx, internal->font, FONT_SIZE, instructions,
+              0xffff00ff, ctx->height - FONT_SIZE * 3 - 10, 10);
 
-    draw_text(ctx, internal->font, FONT_SIZE, text,
-              0xffff00ff, 5, 10);
-    free(text);
   }
 }
 

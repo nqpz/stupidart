@@ -27,6 +27,7 @@ convert input.jpg pam:- | ./stupidart - - | convert pam:- output.png
   - `2`: Generate only triangles
   - `3`: Generate only circles
   - `4`: Generate only rectangles
+  - `r`: Reset
   - Space: Pause/unpause
   - F1: Toggle showing the text.
   - ESC: Save the current image (always without the text) to the output
