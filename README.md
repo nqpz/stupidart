@@ -1,4 +1,4 @@
-<img src="cosmo.jpg" width="200" height="356" align="right">
+<img src="cosmos.jpg" width="300" height="534" align="right">
 
 # Stupid art
 
