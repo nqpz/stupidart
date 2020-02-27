@@ -58,15 +58,11 @@ module mk_full_shape (o: shape) = {
     in (unflatten h w pixels',score)
 
   -- Parallelisation using gridification
-  let gridify 'b (G:i32) (rng:rng) (f:(i32,i32)->rng->(rng,b)) : (rng,[]b) =
-    let (rngs, res) =
-      unzip <| map (\(yG,rng) ->
-		      let (rngs, res) =
-			unzip <| map (\(xG,rng) -> f (yG,xG) rng)
-	                             (indexed(rnge.split_rng G rng))
-		      in (rnge.join_rng rngs, res)
-	            ) (indexed(rnge.split_rng G rng))
-    in (rnge.join_rng rngs, flatten res)
+  let gridify 'b (G:i32) (rng:rng) (f:(i32,i32)->rng->b) : []b =
+    flatten <| map (\(yG,rng) ->
+		      map (\(xG,rng) -> f (yG,xG) rng)
+  	            (indexed(rnge.split_rng G rng))
+		   ) (indexed(rnge.split_rng G rng))
 
   -- Parallelising art generation
   --
@@ -83,10 +79,10 @@ module mk_full_shape (o: shape) = {
   --    each grid cell.
   -- 6. Write the objects to the image using render.
 
-  let Gs = [1i32,2,3]
+  let Gs = [1i32,2,3,5,7,11]
 
   let add [h][w] (count:i32) (image_source: [h][w]color) (image_approx: [h][w]color)
-                 (rng: rng): ([h][w]color, f32, rng) =
+                 (rng: rng): ([h][w]color, f32) =
     let image_diff = map2 (map2 color_diff) image_approx image_source
 
     let (rng, Gi) = dist_int.rand (0,length Gs - 1) rng
@@ -94,12 +90,12 @@ module mk_full_shape (o: shape) = {
     let n_tries = 500
     let (hG,wG) = (h / G, w / G)
     let grid_cells = G*G
-    let (rng, tries: [grid_cells][n_tries](i32,i32,o.t)) =
+    let tries: [grid_cells][n_tries](i32,i32,o.t) =
       gridify G rng (\(j,i) rng ->
 		       let rngs = rnge.split_rng n_tries rng
-		       let (ts, rngs) = unzip <| map (o.generate count hG wG) rngs
-		       in (rnge.join_rng rngs, map (\t -> (j,i,t)) ts))
-      :> (rng, [grid_cells][n_tries](i32,i32,o.t))
+		       let (ts, _) = unzip <| map (o.generate count hG wG) rngs
+		       in map (\t -> (j,i,t)) ts)
+      :> [grid_cells][n_tries](i32,i32,o.t)
 
     let flat_tries = flatten tries
     let sz (_,_,t:o.t) : i32 = o.n_points t
@@ -122,5 +118,5 @@ module mk_full_shape (o: shape) = {
 
     let (image_approx', improvement) = render image_approx (hG,wG) best_tries
 
-    in (image_approx', improvement, rng)
+    in (image_approx', improvement)
 }

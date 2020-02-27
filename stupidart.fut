@@ -13,14 +13,16 @@ let same_dims_2d 'a [m][n][m1][n1] (_source: [m][n]a) (target: [m1][n1]a): [m][n
 
 
 module lys_core = {
-  type sized_state [h][w] = {rng: rng, paused: bool, diff_max: f32, diff: f32, count: i32,
-                             shape: #random | #triangle | #circle | #rectangle,
+
+  type shape = #random | #triangle | #circle | #rectangle
+  type sized_state [h][w] = {startseed:i32, paused: bool, diff_max: f32,
+			     diff: f32, count: i32,
+			     shape: shape,
                              image_source: [h][w]color,
-                             image_approx: [h][w]color}
+			     image_approx: [h][w]color}
   type~ state = sized_state [][]
 
   entry init [h][w] (seed: i32) (image_source: [h][w]argb.colour): state =
-    let rng = rnge.rng_from_seed [seed]
     let image_source' = map (map (\c -> let (r, g, b, _a) = argb.to_rgba c
                                         in cielab_pack (srgb_to_cielab (r, g, b))))
                             image_source
@@ -28,7 +30,8 @@ module lys_core = {
     let black = cielab_pack (srgb_to_cielab (0, 0, 0))
     let image_approx = replicate h (replicate w black)
     let diff = reduce_comm (+) 0 (flatten (map2 (map2 (color_diff)) image_approx image_source'))
-    in {rng, paused=false, diff_max, diff, shape=#random, image_source=image_source', image_approx, count=0}
+    in {startseed=seed, paused=false, diff_max, diff, shape=#random,
+	image_source=image_source', image_approx, count=0}
 
   entry diff_percent (s: state): f32 = 100 * s.diff / s.diff_max
 
@@ -45,18 +48,21 @@ module lys_core = {
     case #step _td ->
       if s.paused then s
       else let image_approx = same_dims_2d s.image_source s.image_approx
-           let (image_approx', improved, rng') =
-             match s.shape
-             case #random -> let (rng, choice) = dist_int.rand (0, 2) s.rng
-                             in if choice == 0 then triangle.add s.count s.image_source image_approx rng
-                                else if choice == 1 then circle.add s.count s.image_source image_approx rng
-                                else rectangle.add s.count s.image_source image_approx rng
-             case #triangle ->   triangle.add s.count s.image_source image_approx s.rng
-             case #circle ->       circle.add s.count s.image_source image_approx s.rng
-             case #rectangle -> rectangle.add s.count s.image_source image_approx s.rng
+	   let rng = rnge.rng_from_seed [s.count+s.startseed]
+	   let (shape:shape,rng) =
+	     if s.shape == #random then
+   	       let (rng, choice) = dist_int.rand (0, 2) rng
+	       in ((if choice == 0 then #triangle
+		    else if choice == 1 then #circle
+		    else #rectangle),rng)
+     	     else (s.shape,rng)
+           let (image_approx', improved) =
+             match shape
+             case #triangle -> triangle.add s.count s.image_source image_approx rng
+             case #circle -> circle.add s.count s.image_source image_approx rng
+             case _rectangle_or_random -> rectangle.add s.count s.image_source image_approx rng
            in s with image_approx = image_approx'
                 with diff = s.diff - improved
-                with rng = rng'
 	        with count = s.count + 1
     case #keydown {key} -> keydown key s
     case _ -> s
