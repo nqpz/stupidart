@@ -1,5 +1,5 @@
-import "base"
 import "lib/github.com/diku-dk/segmented/segmented"
+import "base"
 
 module type shape = {
   type t
