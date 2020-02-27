@@ -49,9 +49,10 @@ void print_help(char** argv) {
   puts("Read an image in Netpbm PAM format, iterate on it, and and save it\nafter closing the window.");
   puts("");
   puts("Options:");
-  puts("  -d DEV  Set the computation device.");
-  puts("  -i      Select execution device interactively.");
-  puts("  --help  Print this help and exit.");
+  puts("  -d DEV   Set the computation device.");
+  puts("  -i       Select execution device interactively.");
+  puts("  -s SEED  Set the seed.");
+  puts("  --help   Print this help and exit.");
 }
 
 int main(int argc, char** argv) {
@@ -59,6 +60,7 @@ int main(int argc, char** argv) {
   bool device_interactive = false;
   char* input_image_path;
   char* output_image_path;
+  uint32_t seed = (int32_t) lys_wall_time();
 
   if (argc > 1 && strcmp(argv[1], "--help") == 0) {
     print_help(argv);
@@ -66,13 +68,16 @@ int main(int argc, char** argv) {
   }
 
   int c;
-  while ((c = getopt(argc, argv, "d:i")) != -1) {
+  while ((c = getopt(argc, argv, "d:s:i")) != -1) {
     switch (c) {
     case 'd':
       deviceopt = optarg;
       break;
     case 'i':
       device_interactive = true;
+      break;
+    case 's':
+      seed = atoi(optarg);
       break;
     default:
       fprintf(stderr, "error: unknown option: %c\n\n", c);
@@ -95,8 +100,6 @@ int main(int argc, char** argv) {
     print_help(argv);
     return EXIT_FAILURE;
   }
-
-  int32_t seed = (int32_t) lys_wall_time();
 
   int width, height;
 
