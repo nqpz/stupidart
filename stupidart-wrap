@@ -21,10 +21,10 @@ fi
 output="$2"
 if ! [ "$output" ]; then
     i=0
-    output="out$i-$input.png"
+    output="$input.out$i.png"
     while test -f "$output"; do
         i=$(expr $i + 1)
-        output="out$i-$input.png"
+        output="$input.out$i.png"
     done
 fi
 
