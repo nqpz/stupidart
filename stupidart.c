@@ -110,8 +110,8 @@ int main(int argc, char** argv) {
   int32_t* image_data = pam_load(input_image, (unsigned int*) &width, (unsigned int*) &height);
   assert(image_data != NULL);
   assert(fclose(input_image) != EOF);
-  printf("Seed: %d\n", seed);
-  printf("Image dimensions: %dx%d\n", width, height);
+  fprintf(stderr, "Seed: %d\n", seed);
+  fprintf(stderr, "Image dimensions: %dx%d\n", width, height);
 
   struct lys_context ctx;
   lys_setup(&ctx, width, height, MAX_FPS, deviceopt, device_interactive, 0);
