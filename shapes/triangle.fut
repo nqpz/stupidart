@@ -49,6 +49,19 @@ let generate (count: i32) (h: i32) (w: i32) (rng: rng): (t, rng) =
   let (rng, width) = randi (0, max_w') rng
   let (rng, vy0) = randi (0, h - 1 - height) rng    -- Position the upper left corner of
   let (rng, vx0) = randi (0, w - 1 - width) rng     -- the rectangle bounding the triangle
+  let (rng, color) = rand_color rng
+  in ({y0=vy0,x0=vx0+width/2,y1=vy0+height,x1=vx0,
+       y2=vy0+height,x2=vx0+width,color},rng)
+
+let generate2 (count: i32) (h: i32) (w: i32) (rng: rng): (t, rng) =
+  let max_h = h - 1
+  let max_h' = i32.max (i32.min max_h 50) (max_h - count)
+  let max_w = w - 1
+  let max_w' = i32.max (i32.min max_w 50) (max_w - count)
+  let (rng, height) = randi (0, max_h') rng
+  let (rng, width) = randi (0, max_w') rng
+  let (rng, vy0) = randi (0, h - 1 - height) rng    -- Position the upper left corner of
+  let (rng, vx0) = randi (0, w - 1 - width) rng     -- the rectangle bounding the triangle
   let (vy1,vx1) = (vy0+height,vx0+width)            -- Calculate the lower right corner
   let (rng, vy) = randi (vy0, vy1) rng              -- Find intermediate values for x and y
   let (rng, vx) = randi (vx0, vx1) rng              -- for use for triangle corners
