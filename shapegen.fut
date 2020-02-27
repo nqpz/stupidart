@@ -60,9 +60,9 @@ module mk_full_shape (o: shape) = {
   -- Parallelisation using gridification
   let gridify 'b (G:i32) (rng:rng) (f:(i32,i32)->rng->b) : []b =
     flatten <| map (\(yG,rng) ->
-		      map (\(xG,rng) -> f (yG,xG) rng)
-  	            (indexed(rnge.split_rng G rng))
-		   ) (indexed(rnge.split_rng G rng))
+                      map (\(xG,rng) -> f (yG,xG) rng)
+                          (indexed(rnge.split_rng G rng))
+                   ) (indexed(rnge.split_rng G rng))
 
   -- Parallelising art generation
   --
@@ -92,10 +92,10 @@ module mk_full_shape (o: shape) = {
     let grid_cells = G*G
     let tries: [grid_cells][n_tries](i32,i32,o.t) =
       gridify G rng (\(j,i) rng ->
-		       let rngs = rnge.split_rng n_tries rng
-		       let (ts, _) = unzip <| map (o.generate count hG wG) rngs
-		       in map (\t -> (j,i,t)) ts)
-      :> [grid_cells][n_tries](i32,i32,o.t)
+                       let rngs = rnge.split_rng n_tries rng
+                       let (ts, _) = unzip <| map (o.generate count hG wG) rngs
+                       in map (\t -> (j,i,t)) ts)
+              :> [grid_cells][n_tries](i32,i32,o.t)
 
     let flat_tries = flatten tries
     let sz (_,_,t:o.t) : i32 = o.n_points t

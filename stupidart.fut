@@ -15,12 +15,12 @@ module lys_core = {
 
   type shape = #random | #triangle | #circle | #rectangle
   type sized_state [h][w] = {startseed:i32, paused: bool, diff_max: f32,
-			     diff: f32, count: i32,
-			     shape: shape,
+                             diff: f32, count: i32,
+                             shape: shape,
                              image_source: [h][w]color,
-			     image_approx: [h][w]color,
-			     resetwhen: f32}             -- <=0: no resetting,
-                                                         --  >0: auto reset when diff < s.reset
+                             image_approx: [h][w]color,
+                             resetwhen: f32} -- <=0: no resetting,
+                                             --  >0: auto reset when diff < s.reset
   type~ state = sized_state [][]
 
   let state_from_image_source [h][w] (seed: i32) (shape:shape) (image_source: [h][w]color) : state =
@@ -29,7 +29,7 @@ module lys_core = {
     let image_approx = replicate h (replicate w black)
     let diff = reduce_comm (+) 0 (flatten (map2 (map2 (color_diff)) image_approx image_source))
     in {startseed=seed, paused=false, diff_max, diff, shape,
-	image_source, image_approx, count=0, resetwhen=0}
+        image_source, image_approx, count=0, resetwhen=0}
 
   entry init [h][w] (seed: i32) (image_source: [h][w]argb.colour) : state =
     let image_source' = map (map (\c -> let (r, g, b, _a) = argb.to_rgba c
@@ -53,9 +53,9 @@ module lys_core = {
     else if key == SDLK_3 then s with shape = #circle
     else if key == SDLK_4 then s with shape = #rectangle
     else if key == SDLK_r then (if s.resetwhen <= 0 then
-                                    let d = diff_percent s
-				    in reset s with resetwhen = d
-				else reset s)
+                                let d = diff_percent s
+                                in reset s with resetwhen = d
+                                else reset s)
     else s
 
   let event (e: event) (s: state): state =
@@ -63,24 +63,24 @@ module lys_core = {
     case #step _td ->
       if s.paused then s
       else let d = s.resetwhen
-	   in if diff_percent s < d then reset s with resetwhen = d
-      else let image_approx = same_dims_2d s.image_source s.image_approx
-	   let rng = rnge.rng_from_seed [s.count+s.startseed]
-	   let (shape:shape,rng) =
-	     if s.shape == #random then
-   	       let (rng, choice) = dist_int.rand (0, 2) rng
-	       in ((if choice == 0 then #triangle
-		    else if choice == 1 then #circle
-		    else #rectangle),rng)
-     	     else (s.shape,rng)
-           let (image_approx', improved) =
-             match shape
-             case #triangle -> triangle.add s.count s.image_source image_approx rng
-             case #circle -> circle.add s.count s.image_source image_approx rng
-             case _rectangle_or_random -> rectangle.add s.count s.image_source image_approx rng
-           in s with image_approx = image_approx'
+           in if diff_percent s < d then reset s with resetwhen = d
+              else let image_approx = same_dims_2d s.image_source s.image_approx
+                   let rng = rnge.rng_from_seed [s.count+s.startseed]
+                   let (shape:shape,rng) =
+                     if s.shape == #random then
+                     let (rng, choice) = dist_int.rand (0, 2) rng
+                     in ((if choice == 0 then #triangle
+                          else if choice == 1 then #circle
+                          else #rectangle),rng)
+                     else (s.shape,rng)
+                   let (image_approx', improved) =
+                     match shape
+                     case #triangle -> triangle.add s.count s.image_source image_approx rng
+                     case #circle -> circle.add s.count s.image_source image_approx rng
+                     case _rectangle_or_random -> rectangle.add s.count s.image_source image_approx rng
+                   in s with image_approx = image_approx'
                 with diff = s.diff - improved
-	        with count = s.count + 1
+            with count = s.count + 1
     case #keydown {key} -> keydown key s
     case _ -> s
 
