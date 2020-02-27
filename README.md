@@ -1,6 +1,4 @@
-<video src="cosmo.webm" poster="cosmo.jpg" width="200" height="356" align="right">
-<img src="cosmo.jpg">
-</video>
+<img src="cosmo.jpg" width="200" height="356" align="right">
 
 # Stupid art
 
