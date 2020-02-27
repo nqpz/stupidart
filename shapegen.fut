@@ -18,18 +18,12 @@ module type shape = {
 module mk_full_shape (o: shape) = {
   type t = o.t
 
-  let index (w: i32) (t: t) (k: i32): i32 =
-    match o.coordinates t k
-    case #just (y, x) -> w * y + x
-    case #nothing -> -1
+  -- A few general utilities
+  let indices [n] 'a (_:[n]a) : [n]i32 = iota n
+  let indexed [n] 'a (xs:[n]a) : [n](i32,a) = zip (iota n) xs
 
-  let render [h][w] (image: [h][w]color) (t: t): [h][w]color =
-    let pixels = copy (flatten image)
-    let n = o.n_points t
-    let indices = map (index w t) (0..<n)
-    let pixels' = scatter pixels indices (replicate n (o.color t))
-    in unflatten h w pixels'
-
+  -- A few flattening utility functions that are still not
+  -- available in the segmented library
   let expand_reduce 'a 'b (sz: a -> i32) (get: a -> i32 -> b)
                           (op: b -> b -> b) (ne: b) (arr: []a) : []b =
     let szs = map sz arr
@@ -46,25 +40,24 @@ module mk_full_shape (o: shape) = {
     let get' x i = if sz x == 0 then ne else get x i
     in (expand_reduce sz' get' op ne arr) :> [n]b
 
-  let index2 (off_y:i32,off_x:i32) (w: i32) (t: t) (k: i32): i32 =
+  -- Rendering utilities
+  let index (off_y:i32,off_x:i32) (w: i32) (t: t) (k: i32): i32 =
     match o.coordinates t k
     case #just (y, x) -> w * (off_y+y) + off_x + x
     case #nothing -> -1
 
-  let render2 [a][h][w] (image: [h][w]color) (hG:i32,wG:i32) (arg:[a]((i32,i32,t),f32)) : ([h][w]color,f32) =
+  let render [a][h][w] (image: [h][w]color) (hG:i32,wG:i32) (arg:[a]((i32,i32,t),f32)) : ([h][w]color,f32) =
     let pixels = copy (flatten image)
     let sz ((_,_,t:t),score) : i32 = if score > 0 then o.n_points t else 0
     let get ((j,i,t:t),_) (k:i32) =
-      (index2 (j*hG,i*wG) w t k,
+      (index (j*hG,i*wG) w t k,
        o.color t)
     let (indices,colors) = unzip <| expand sz get arg
     let pixels' = scatter pixels indices colors
     let score = reduce (+) 0 (map (\(_,s) -> f32.max 0 s) arg)
     in (unflatten h w pixels',score)
 
-  let indices [n] 'a (_:[n]a) : [n]i32 = iota n
-  let indexed [n] 'a (xs:[n]a) : [n](i32,a) = zip (iota n) xs
-
+  -- Parallelisation using gridification
   let gridify 'b (G:i32) (rng:rng) (f:(i32,i32)->rng->(rng,b)) : (rng,[]b) =
     let (rngs, res) =
       unzip <| map (\(yG,rng) ->
@@ -88,7 +81,7 @@ module mk_full_shape (o: shape) = {
   -- 4. Reshape to the [G][G][1000](score,o.t)
   -- 5. Now do a map (map (reduce ...)) to find the candidate for
   --    each grid cell.
-  -- 6. Write the objects to the image using render2.
+  -- 6. Write the objects to the image using render.
 
   let Gs = [1i32,2,3]
 
@@ -127,7 +120,7 @@ module mk_full_shape (o: shape) = {
        map (map (reduce_comm best_try ((-1,-1,o.empty),-f32.inf))) tries_with_scores)
       :> [grid_cells]((i32,i32,o.t),f32)
 
-    let (image_approx', improvement) = render2 image_approx (hG,wG) best_tries
+    let (image_approx', improvement) = render image_approx (hG,wG) best_tries
 
     in (image_approx', improvement, rng)
 }
