@@ -4,7 +4,8 @@
 
 [![Build Status](https://travis-ci.org/nqpz/stupidart.svg?branch=master)](https://travis-ci.org/nqpz/stupidart)
 
-Approximate an input image by adding random shapes on top of each other.
+Approximate an input image by adding random shapes on top of each other
+in parallel.
 
 Requires [Futhark](http://futhark-lang.org) and SDL2 and SDL2-ttf
 libraries with associated header files.
