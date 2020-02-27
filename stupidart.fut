@@ -45,15 +45,22 @@ module lys_core = {
     case #step _td ->
       if s.paused then s
       else let image_approx = same_dims_2d s.image_source s.image_approx
-           let (image_approx', improved, rng') =
+           let (shape : #circle | #triangle | #rectangle, rng) =
              match s.shape
-             case #random -> let (rng, choice) = dist_int.rand (0, 2) s.rng
-                             in if choice == 0 then triangle.add s.count s.image_source image_approx rng
-                                else if choice == 1 then circle.add s.count s.image_source image_approx rng
-                                else rectangle.add s.count s.image_source image_approx rng
-             case #triangle ->   triangle.add s.count s.image_source image_approx s.rng
-             case #circle ->       circle.add s.count s.image_source image_approx s.rng
-             case #rectangle -> rectangle.add s.count s.image_source image_approx s.rng
+             case #random ->
+               let (rng, choice) = dist_int.rand (0, 2) s.rng
+               in (if choice == 0 then #triangle
+                   else if choice == 1 then #circle
+                   else #rectangle,
+                   rng)
+             case #triangle -> (#triangle, s.rng)
+             case #circle -> (#circle, s.rng)
+             case #rectangle -> (#rectangle, s.rng)
+           let (image_approx', improved, rng') =
+             match shape
+             case #triangle ->   triangle.add s.count s.image_source image_approx rng
+             case #circle ->       circle.add s.count s.image_source image_approx rng
+             case #rectangle -> rectangle.add s.count s.image_source image_approx rng
            in s with image_approx = image_approx'
                 with diff = s.diff - improved
                 with rng = rng'
