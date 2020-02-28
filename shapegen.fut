@@ -46,8 +46,8 @@ module mk_full_shape (o: shape) = {
     case #just (y, x) -> w * (off_y+y) + off_x + x
     case #nothing -> -1
 
-  let render [a][h][w] (image: [h][w]color) (hG:i32,wG:i32) (arg:[a]((i32,i32,t),f32)) : ([h][w]color,f32) =
-    let pixels = copy (flatten image)
+  let render [a][h][w] (image: *[h][w]color) (hG:i32,wG:i32) (arg:[a]((i32,i32,t),f32)) : (*[h][w]color,f32) =
+    let pixels = flatten image
     let sz ((_,_,t:t),score) : i32 = if score > 0 then o.n_points t else 0
     let get ((j,i,t:t),_) (k:i32) =
       (index (j*hG,i*wG) w t k,
@@ -81,8 +81,8 @@ module mk_full_shape (o: shape) = {
 
   let Gs = [1i32,2,3,5,7,11]
 
-  let add [h][w] (count:i32) (image_source: [h][w]color) (image_approx: [h][w]color)
-                 (rng: rng): ([h][w]color, f32) =
+  let add [h][w] (count:i32) (image_source: [h][w]color) (image_approx: *[h][w]color)
+                 (rng: rng): (*[h][w]color, f32) =
     let image_diff = map2 (map2 color_diff) image_approx image_source
 
     let (rng, Gi) = dist_int.rand (0,length Gs - 1) rng
@@ -116,7 +116,5 @@ module mk_full_shape (o: shape) = {
        map (map (reduce_comm best_try ((-1,-1,o.empty),-f32.inf))) tries_with_scores)
       :> [grid_cells]((i32,i32,o.t),f32)
 
-    let (image_approx', improvement) = render image_approx (hG,wG) best_tries
-
-    in (image_approx', improvement)
+    in render image_approx (hG,wG) best_tries
 }

@@ -37,14 +37,14 @@ module lys_core = {
                             image_source
     in state_from_image_source seed #random image_source'
 
-  let reset (s:state) : state =
+  let reset (s: state): state =
     state_from_image_source s.startseed s.shape s.image_source
 
-  let diff_percent (s: state): f32 =
-    100 * s.diff / s.diff_max
+  let diff_percent (diff: f32) (s: state): f32 =
+    100 * diff / s.diff_max
 
   entry text_content (s: state): (f32, bool) =
-    (diff_percent s, s.resetwhen > 0)
+    (diff_percent s.diff s, s.resetwhen > 0)
 
   let keydown (key: i32) (s: state) =
     if key == SDLK_SPACE then s with paused = !s.paused
@@ -53,34 +53,42 @@ module lys_core = {
     else if key == SDLK_3 then s with shape = #circle
     else if key == SDLK_4 then s with shape = #rectangle
     else if key == SDLK_r then (if s.resetwhen <= 0 then
-                                let d = diff_percent s
+                                let d = diff_percent s.diff s
                                 in reset s with resetwhen = d
                                 else reset s)
     else s
+
+  let step (n_iterations: i32) (s: state): state =
+    let image_approx = same_dims_2d s.image_source s.image_approx
+    let image_approx = copy image_approx
+    let (s', image_approx', diff', count') =
+      loop (s, image_approx, diff, count) = (s, image_approx, s.diff, s.count) for _i < n_iterations
+      do let d = s.resetwhen
+         in if diff_percent diff s < d
+            then (reset s with resetwhen = d, image_approx, diff, count)
+            else let rng = rnge.rng_from_seed [count + s.startseed]
+                 let (shape:shape, rng) =
+                   if s.shape == #random
+                   then let (rng, choice) = dist_int.rand (0, 2) rng
+                        in ((if choice == 0 then #triangle
+                             else if choice == 1 then #circle
+                             else #rectangle), rng)
+                   else (s.shape, rng)
+                 let (image_approx', improved) =
+                   match shape
+                   case #triangle -> triangle.add count s.image_source image_approx rng
+                   case #circle -> circle.add count s.image_source image_approx rng
+                   case _rectangle_or_random -> rectangle.add count s.image_source image_approx rng
+                 in (s, image_approx', diff - improved, count + 1)
+    in s' with image_approx = image_approx'
+          with diff = diff'
+          with count = count'
 
   let event (e: event) (s: state): state =
     match e
     case #step _td ->
       if s.paused then s
-      else let d = s.resetwhen
-           in if diff_percent s < d then reset s with resetwhen = d
-              else let image_approx = same_dims_2d s.image_source s.image_approx
-                   let rng = rnge.rng_from_seed [s.count+s.startseed]
-                   let (shape:shape,rng) =
-                     if s.shape == #random then
-                     let (rng, choice) = dist_int.rand (0, 2) rng
-                     in ((if choice == 0 then #triangle
-                          else if choice == 1 then #circle
-                          else #rectangle),rng)
-                     else (s.shape,rng)
-                   let (image_approx', improved) =
-                     match shape
-                     case #triangle -> triangle.add s.count s.image_source image_approx rng
-                     case #circle -> circle.add s.count s.image_source image_approx rng
-                     case _rectangle_or_random -> rectangle.add s.count s.image_source image_approx rng
-                   in s with image_approx = image_approx'
-                with diff = s.diff - improved
-            with count = s.count + 1
+      else step 1 s
     case #keydown {key} -> keydown key s
     case _ -> s
 
