@@ -52,9 +52,9 @@ module lys_core = {
     else if key == SDLK_2 then s with shape = #triangle
     else if key == SDLK_3 then s with shape = #circle
     else if key == SDLK_4 then s with shape = #rectangle
-    else if key == SDLK_r then (if s.resetwhen <= 0 then
-                                let d = diff_percent s.diff s
-                                in reset s with resetwhen = d
+    else if key == SDLK_r then (if s.resetwhen <= 0
+                                then let d = diff_percent s.diff s
+                                     in reset s with resetwhen = d
                                 else reset s)
     else s
 
@@ -86,9 +86,7 @@ module lys_core = {
 
   let event (e: event) (s: state): state =
     match e
-    case #step _td ->
-      if s.paused then s
-      else step 1 s
+    case #step _td -> if s.paused then s else step 1 s
     case #keydown {key} -> keydown key s
     case _ -> s
 
