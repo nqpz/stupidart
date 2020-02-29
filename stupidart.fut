@@ -60,28 +60,32 @@ module lys_core = {
                                 else reset s)
     else s
 
-  let step (n_iterations: i32) (s: state): state =
+  let step_step [h][w] ((s, image_approx, image_diff, diff, count): (state, *[h][w]color, *[h][w]f32, f32, i32)): (state, *[h][w]color, *[h][w]f32, f32, i32) =
+    let d = s.resetwhen
+    in if diff_percent diff s < d
+       then (reset s with resetwhen = d, image_approx, image_diff, diff, count)
+       else let rng = rnge.rng_from_seed [count + s.startseed]
+            let (shape:shape, rng) =
+              if s.shape == #random
+              then let (rng, choice) = dist_int.rand (0, 2) rng
+                   in ((if choice == 0 then #triangle
+                        else if choice == 1 then #circle
+                        else #rectangle), rng)
+              else (s.shape, rng)
+            let (image_approx', image_diff', improved) =
+              match shape
+              case #triangle -> triangle.add count s.image_source image_approx image_diff rng
+              case #circle -> circle.add count s.image_source image_approx image_diff rng
+              case _rectangle_or_random -> rectangle.add count s.image_source image_approx image_diff rng
+            in (s, image_approx', image_diff', diff - improved, count + 1)
+
+  let step (n_max_iterations: i32) (diff_goal: f32) (s: state): state =
     let image_approx = copy (same_dims_2d s.image_source s.image_approx)
     let image_diff = copy (same_dims_2d s.image_source s.image_diff)
-    let (s', image_approx', image_diff', diff', count') =
-      loop (s, image_approx, image_diff, diff, count) = (s, image_approx, image_diff, s.diff, s.count) for _i < n_iterations
-      do let d = s.resetwhen
-         in if diff_percent diff s < d
-            then (reset s with resetwhen = d, image_approx, image_diff, diff, count)
-            else let rng = rnge.rng_from_seed [count + s.startseed]
-                 let (shape:shape, rng) =
-                   if s.shape == #random
-                   then let (rng, choice) = dist_int.rand (0, 2) rng
-                        in ((if choice == 0 then #triangle
-                             else if choice == 1 then #circle
-                             else #rectangle), rng)
-                   else (s.shape, rng)
-                 let (image_approx', image_diff', improved) =
-                   match shape
-                   case #triangle -> triangle.add count s.image_source image_approx image_diff rng
-                   case #circle -> circle.add count s.image_source image_approx image_diff rng
-                   case _rectangle_or_random -> rectangle.add count s.image_source image_approx image_diff rng
-                 in (s, image_approx', image_diff', diff - improved, count + 1)
+    let ((s', image_approx', image_diff', diff', count'), _) =
+      loop ((s, image_approx, image_diff, diff, count), step_i) = ((s, image_approx, image_diff, s.diff, s.count), 0)
+      while diff_percent diff s > diff_goal && step_i < n_max_iterations
+      do (step_step (s, image_approx, image_diff, diff, count), step_i + 1)
     in s' with image_approx = image_approx'
           with image_diff = image_diff'
           with diff = diff'
@@ -89,7 +93,7 @@ module lys_core = {
 
   let event (e: event) (s: state): state =
     match e
-    case #step _td -> if s.paused then s else step 1 s
+    case #step _td -> if s.paused then s else step 1 0 s
     case #keydown {key} -> keydown key s
     case _ -> s
 
