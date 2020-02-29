@@ -172,7 +172,7 @@ int main(int argc, char** argv) {
       break;
 #endif
     case 's':
-      seed = atoi(optarg);
+      assert(1 == sscanf(optarg, "%u", &seed));
       break;
     case 'd':
       deviceopt = optarg;
