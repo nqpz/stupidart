@@ -26,7 +26,7 @@ let xyz_to_srgb ((x, y, z): tup3): tup3 =
 
 let xyz_to_cielab ((x, y, z): tup3): tup3 =
   let upd w = if w > 0.008856
-              then w**(1/3)
+              then w**(1 / 3)
               else (7.787 * w) + (16 / 116)
   let (x, y, z) = (upd x, upd y, upd z)
   let l = (116 * y) - 16
@@ -53,9 +53,12 @@ let cielab_bounds: cielab_bounds =
 
 let cielab_pack_factor: f32 = 9.98
 
-let li_max: i32 = t32 (cielab_pack_factor * (cielab_bounds.l.max - cielab_bounds.l.min))
-let ai_max: i32 = t32 (cielab_pack_factor * (cielab_bounds.a.max - cielab_bounds.a.min))
-let bi_max: i32 = t32 (cielab_pack_factor * (cielab_bounds.b.max - cielab_bounds.b.min))
+let li_max: i32 = t32 (cielab_pack_factor *
+                       (cielab_bounds.l.max - cielab_bounds.l.min))
+let ai_max: i32 = t32 (cielab_pack_factor *
+                       (cielab_bounds.a.max - cielab_bounds.a.min))
+let bi_max: i32 = t32 (cielab_pack_factor *
+                       (cielab_bounds.b.max - cielab_bounds.b.min))
 
 let cielab_pack_ints ((li, ai, bi): (u32, u32, u32)): u32 =
   li << 22 | ai << 11 | bi
@@ -71,11 +74,11 @@ let nonneg (k: i32): u32 =
 
 let cielab_pack ((l, a, b): tup3): color =
   -- 10 bits
-  let li = nonneg (t32 (cielab_pack_factor * l))
+  let li = nonneg <| t32 (cielab_pack_factor * l)
   -- 11 bits
-  let ai = nonneg (t32 (cielab_pack_factor * (a - cielab_bounds.a.min)))
+  let ai = nonneg <| t32 (cielab_pack_factor * (a - cielab_bounds.a.min))
   -- 11 bits
-  let bi = nonneg (t32 (cielab_pack_factor * (b - cielab_bounds.b.min)))
+  let bi = nonneg <| t32 (cielab_pack_factor * (b - cielab_bounds.b.min))
   in cielab_pack_ints (li, ai, bi)
 
 let cielab_unpack (c: color): tup3 =
