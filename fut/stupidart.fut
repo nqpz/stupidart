@@ -1,5 +1,4 @@
-import "lib/github.com/diku-dk/lys/lys"
-
+import "../lib/github.com/diku-dk/lys/lys"
 import "base"
 import "shapegen"
 

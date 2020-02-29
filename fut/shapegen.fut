@@ -1,4 +1,4 @@
-import "lib/github.com/diku-dk/segmented/segmented"
+import "../lib/github.com/diku-dk/segmented/segmented"
 import "base"
 
 -- A few flattening utility functions that are still not

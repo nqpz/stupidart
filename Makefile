@@ -20,11 +20,11 @@ include lib/github.com/diku-dk/lys/setup_flags.mk
 ifeq ($(STUPIDART_NO_INTERACTIVE),1)
 CFLAGS_NO_INTERACTIVE=$(NOWARN_CFLAGS) -Wall -Wextra -pedantic -DLYS_BACKEND_$(LYS_BACKEND) -DSTUPIDART_NO_INTERACTIVE
 LDFLAGS_NO_INTERACTIVE=-lm $(DEVICE_LDFLAGS)
-stupidart: libstupidart.o lib/github.com/diku-dk/lys/context_setup.c lib/github.com/diku-dk/lys/context_setup.h stupidart.c pam.h
-	gcc lib/github.com/diku-dk/lys/context_setup.c stupidart.c -I. -DPROGHEADER='"libstupidart.h"' libstupidart.o -o $@ $(CFLAGS_NO_INTERACTIVE) $(LDFLAGS_NO_INTERACTIVE)
+stupidart: libstupidart.o lib/github.com/diku-dk/lys/context_setup.c lib/github.com/diku-dk/lys/context_setup.h c/stupidart.c c/pam.h
+	gcc lib/github.com/diku-dk/lys/context_setup.c c/stupidart.c -I. -DPROGHEADER='"libstupidart.h"' libstupidart.o -o $@ $(CFLAGS_NO_INTERACTIVE) $(LDFLAGS_NO_INTERACTIVE)
 else
-stupidart: libstupidart.o lib/github.com/diku-dk/lys/liblys.c lib/github.com/diku-dk/lys/liblys.h lib/github.com/diku-dk/lys/context_setup.c lib/github.com/diku-dk/lys/context_setup.h stupidart.c pam.h
-	gcc lib/github.com/diku-dk/lys/liblys.c lib/github.com/diku-dk/lys/context_setup.c stupidart.c -I. -DPROGHEADER='"libstupidart.h"' libstupidart.o -o $@ $(CFLAGS) $(LDFLAGS)
+stupidart: libstupidart.o lib/github.com/diku-dk/lys/liblys.c lib/github.com/diku-dk/lys/liblys.h lib/github.com/diku-dk/lys/context_setup.c lib/github.com/diku-dk/lys/context_setup.h c/stupidart.c c/pam.h
+	gcc lib/github.com/diku-dk/lys/liblys.c lib/github.com/diku-dk/lys/context_setup.c c/stupidart.c -I. -DPROGHEADER='"libstupidart.h"' libstupidart.o -o $@ $(CFLAGS) $(LDFLAGS)
 endif
 endif
 
@@ -32,7 +32,7 @@ endif
 libstupidart.o: libstupidart.c
 	gcc -o $@ -c $< $(NOWARN_CFLAGS)
 
-libstupidart.c: $(PROG_FUT_DEPS) shapes/triangle.fut shapes/rectangle.fut shapes/circle.fut
+libstupidart.c: $(PROG_FUT_DEPS)
 	futhark $(LYS_BACKEND) -o libstupidart --library $(FUT_SOURCE)
 
 clean:

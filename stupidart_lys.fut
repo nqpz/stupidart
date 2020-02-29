@@ -1,5 +1,5 @@
 import "lib/github.com/diku-dk/lys/lys"
-module core = import "stupidart"
+module core = import "fut/stupidart"
 
 type^ state = core.state
 
