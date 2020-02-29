@@ -17,7 +17,7 @@ header files.
 To build, first run `futhark pkg sync` once.
 
 Then run `make` to build.  To build without the SDL dependency, instead
-run `STUPIDART_NO_INTERACTIVE=0 make`.  You can also use the
+run `STUPIDART_NO_INTERACTIVE=1 make`.  You can also use the
 backend-specific `LYS_*` environment variables mentioned in
 [Lys](https://github.com/diku-dk/lys).
 
