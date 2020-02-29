@@ -2,6 +2,8 @@
 
 LYS_TTF=1
 
+STUPIDART_FUT_DEPS=$(shell ls *.fut; find fut -name \*.fut; find lib -name \*.fut)
+
 all: stupidart
 
 ifeq ($(shell test futhark.pkg -nt lib; echo $$?),0)
@@ -32,7 +34,7 @@ endif
 libstupidart.o: libstupidart.c
 	gcc -o $@ -c $< $(NOWARN_CFLAGS)
 
-libstupidart.c: $(PROG_FUT_DEPS)
+libstupidart.c: $(STUPIDART_FUT_DEPS)
 	futhark $(LYS_BACKEND) -o libstupidart --library $(FUT_SOURCE)
 
 clean:
