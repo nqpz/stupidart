@@ -76,6 +76,7 @@ void handle_event(struct lys_context *ctx, enum lys_event event) {
 
 int32_t* run_interactive(struct futhark_context *futctx,
                          int width, int height, int seed,
+                         bool show_text_initial,
                          struct futhark_i32_2d *image_fut) {
   struct lys_context ctx;
   lys_setup(&ctx, width, height, MAX_FPS, 0);
@@ -92,7 +93,7 @@ int32_t* run_interactive(struct futhark_context *futctx,
 
   struct internal internal;
   ctx.event_handler_data = (void*) &internal;
-  internal.show_text = true;
+  internal.show_text = show_text_initial;
   internal.font = TTF_OpenFont("NeomatrixCode.ttf", FONT_SIZE);
   SDL_ASSERT(internal.font != NULL);
 
@@ -115,6 +116,7 @@ void print_help(char** argv) {
 #endif
   fputs("  -m N     Set the maximum number of iterations to run.  Default: 1000.\n", stderr);
   fputs("  -g 0..1  Set the goal difference (lower is better).  Default: 0.05.\n", stderr);
+  fputs("  -T       Do not show debug text (when interactive).\n", stderr);
   fputs("  -s SEED  Set the seed.\n", stderr);
   fputs("  -d DEV   Set the computation device.\n", stderr);
   fputs("  -p       Pick execution device interactively.\n", stderr);
@@ -135,6 +137,10 @@ int main(int argc, char** argv) {
 #endif
   int n_max_iterations = 1000;
   float diff_goal = 0.05;
+#ifndef STUPIDART_NO_INTERACTIVE
+  bool show_text = true;
+#endif
+
   uint32_t seed = (int32_t) lys_wall_time();
 
   if (argc > 1 && strcmp(argv[1], "--help") == 0) {
@@ -143,7 +149,7 @@ int main(int argc, char** argv) {
   }
 
   int c;
-  while ((c = getopt(argc, argv, "him:g:s:d:p")) != -1) {
+  while ((c = getopt(argc, argv, "him:g:Ts:d:p")) != -1) {
     switch (c) {
     case 'h':
       print_help(argv);
@@ -160,6 +166,11 @@ int main(int argc, char** argv) {
     case 'g':
       assert(1 == sscanf(optarg, "%f", &diff_goal));
       break;
+#ifndef STUPIDART_NO_INTERACTIVE
+    case 'T':
+      show_text = false;
+      break;
+#endif
     case 's':
       seed = atoi(optarg);
       break;
@@ -226,7 +237,7 @@ int main(int argc, char** argv) {
     output_image_data = run_noninteractive(futctx, width, height, seed,
                                            n_max_iterations, diff_goal, image_fut);
   } else {
-    output_image_data = run_interactive(futctx, width, height, seed, image_fut);
+    output_image_data = run_interactive(futctx, width, height, seed, show_text, image_fut);
   }
 #else
   output_image_data = run_noninteractive(futctx, width, height, seed,
