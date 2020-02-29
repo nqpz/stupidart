@@ -42,11 +42,11 @@ module lys_core = {
   let reset (s: state): state =
     state_from_image_source s.startseed s.shape s.image_source
 
-  let diff_percent (diff: f32) (s: state): f32 =
-    100 * diff / s.diff_max
+  let diff_ratio (diff: f32) (s: state): f32 =
+    diff / s.diff_max
 
   entry text_content (s: state): (f32, bool) =
-    (diff_percent s.diff s, s.resetwhen > 0)
+    (100 * diff_ratio s.diff s, s.resetwhen > 0)
 
   let keydown (key: i32) (s: state) =
     if key == SDLK_SPACE then s with paused = !s.paused
@@ -55,14 +55,14 @@ module lys_core = {
     else if key == SDLK_3 then s with shape = #circle
     else if key == SDLK_4 then s with shape = #rectangle
     else if key == SDLK_r then (if s.resetwhen <= 0
-                                then let d = diff_percent s.diff s
+                                then let d = diff_ratio s.diff s
                                      in reset s with resetwhen = d
                                 else reset s)
     else s
 
   let step_step [h][w] ((s, image_approx, image_diff, diff, count): (state, *[h][w]color, *[h][w]f32, f32, i32)): (state, *[h][w]color, *[h][w]f32, f32, i32) =
     let d = s.resetwhen
-    in if diff_percent diff s < d
+    in if diff_ratio diff s < d
        then (reset s with resetwhen = d, image_approx, image_diff, diff, count)
        else let rng = rnge.rng_from_seed [count + s.startseed]
             let (shape:shape, rng) =
@@ -79,21 +79,22 @@ module lys_core = {
               case _rectangle_or_random -> rectangle.add count s.image_source image_approx image_diff rng
             in (s, image_approx', image_diff', diff - improved, count + 1)
 
-  let step (n_max_iterations: i32) (diff_goal: f32) (s: state): state =
+  let step (n_max_iterations: i32) (diff_goal: f32) (s: state): (state, i32) =
     let image_approx = copy (same_dims_2d s.image_source s.image_approx)
     let image_diff = copy (same_dims_2d s.image_source s.image_diff)
-    let ((s', image_approx', image_diff', diff', count'), _) =
+    let ((s', image_approx', image_diff', diff', count'), n_iterations) =
       loop ((s, image_approx, image_diff, diff, count), step_i) = ((s, image_approx, image_diff, s.diff, s.count), 0)
-      while diff_percent diff s > diff_goal && step_i < n_max_iterations
+      while diff_ratio diff s > diff_goal && step_i < n_max_iterations
       do (step_step (s, image_approx, image_diff, diff, count), step_i + 1)
-    in s' with image_approx = image_approx'
-          with image_diff = image_diff'
-          with diff = diff'
-          with count = count'
+    in (s' with image_approx = image_approx'
+           with image_diff = image_diff'
+           with diff = diff'
+           with count = count',
+        n_iterations)
 
   let event (e: event) (s: state): state =
     match e
-    case #step _td -> if s.paused then s else step 1 0 s
+    case #step _td -> if s.paused then s else (step 1 0 s).0
     case #keydown {key} -> keydown key s
     case _ -> s
 
@@ -102,6 +103,12 @@ module lys_core = {
                     in argb.from_rgba r g b 1)) s.image_approx
 
   let resize _ _ (s: state): state = s
+
+  entry noninteractive [h][w] (seed: i32) (n_max_iterations: i32) (diff_goal: f32)
+                              (image_source: [h][w]argb.colour): ([h][w]argb.colour, i32, f32) =
+    let s = init seed image_source
+    let (s', n_iterations) = step n_max_iterations diff_goal s
+    in (render s', n_iterations, 100 * diff_ratio s.diff s)
 }
 
 open lys_core

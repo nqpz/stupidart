@@ -7,12 +7,21 @@
 Approximate an input image by adding random shapes on top of each other
 in parallel.
 
-Requires [Futhark](http://futhark-lang.org) and SDL2 and SDL2-ttf
-libraries with associated header files.
+Dependency: [Futhark](http://futhark-lang.org).
 
-## Building and running
+Optional dependencies: The SDL2 and SDL2-ttf libraries with associated
+header files.
 
-To build, run `futhark pkg sync` once, and then `make`.
+## Building
+
+To build, first run `futhark pkg sync` once.
+
+Then run `make` to build.  To build without the SDL dependency, instead
+run `STUPIDART_NO_INTERACTIVE=0 make`.  You can also use the
+backend-specific `LYS_*` environment variables mentioned in
+[Lys](https://github.com/diku-dk/lys).
+
+## Running
 
 Run `./stupidart input.pam output.pam` to generate art.  You can use
 ImageMagick's `convert` utility to convert an image into the Netpbm PAM
@@ -22,7 +31,12 @@ format.  Example:
 convert input.jpg pam:- | ./stupidart - - | convert pam:- output.png
 ```
 
-## Controls
+Run `./stupidart --help` to see the available options.
+
+## Controls for interactive use
+
+You can run `stupidart -i` and watch the image as it is generated (this
+will be slower than the default non-interactive approach).
 
   - `1`: Generate random shapes (default)
   - `2`: Generate only triangles

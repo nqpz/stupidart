@@ -1,4 +1,15 @@
+#define _XOPEN_SOURCE
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <stdbool.h>
+#include <assert.h>
+
+#ifndef STUPIDART_NO_INTERACTIVE
 #include "lib/github.com/diku-dk/lys/liblys.h"
+#else
+#include "lib/github.com/diku-dk/lys/context_setup.h"
+#endif
 
 #define _XOPEN_SOURCE
 #include <unistd.h>
@@ -8,6 +19,26 @@
 #define MAX_FPS 60
 #define FONT_SIZE 20
 
+int32_t* run_noninteractive(struct futhark_context *futctx,
+                            int width, int height, int seed,
+                            int n_max_iterations, float diff_goal,
+                            struct futhark_i32_2d *image_fut) {
+  struct futhark_i32_2d *output_image_fut;
+  int32_t* output_image_data = (int32_t*) malloc(width * height * sizeof(int32_t));
+  if (output_image_data == NULL) {
+    return NULL;
+  }
+  int n_iterations;
+  float diff;
+  futhark_entry_noninteractive(futctx, &output_image_fut, &n_iterations, &diff,
+                               seed, n_max_iterations, diff_goal, image_fut);
+  FUT_CHECK(futctx, futhark_values_i32_2d(futctx, output_image_fut, output_image_data));
+  FUT_CHECK(futctx, futhark_free_i32_2d(futctx, output_image_fut));
+  fprintf(stderr, "Final number of iterations: %d\nFinal difference: %f%%\n", n_iterations, diff);
+  return output_image_data;
+}
+
+#ifndef STUPIDART_NO_INTERACTIVE
 struct internal {
   TTF_Font *font;
   bool show_text;
@@ -43,16 +74,54 @@ void handle_event(struct lys_context *ctx, enum lys_event event) {
   }
 }
 
+int32_t* run_interactive(struct futhark_context *futctx,
+                         int width, int height, int seed,
+                         struct futhark_i32_2d *image_fut) {
+  struct lys_context ctx;
+  lys_setup(&ctx, width, height, MAX_FPS, 0);
+  ctx.fut = futctx;
+
+  ctx.event_handler_data = NULL;
+  ctx.event_handler = handle_event;
+
+  futhark_entry_init(ctx.fut, &ctx.state, seed, image_fut);
+
+  futhark_free_i32_2d(ctx.fut, image_fut);
+
+  SDL_ASSERT(TTF_Init() == 0);
+
+  struct internal internal;
+  ctx.event_handler_data = (void*) &internal;
+  internal.show_text = true;
+  internal.font = TTF_OpenFont("NeomatrixCode.ttf", FONT_SIZE);
+  SDL_ASSERT(internal.font != NULL);
+
+  lys_run_sdl(&ctx);
+
+  TTF_CloseFont(internal.font);
+
+  return ctx.data;
+}
+#endif
+
 void print_help(char** argv) {
-  printf("Usage: %s options... input.pam output.pam\n", argv[0]);
-  puts("");
-  puts("Read an image in Netpbm PAM format, iterate on it, and and save it\nafter closing the window.");
-  puts("");
-  puts("Options:");
-  puts("  -d DEV   Set the computation device.");
-  puts("  -i       Select execution device interactively.");
-  puts("  -s SEED  Set the seed.");
-  puts("  --help   Print this help and exit.");
+  fprintf(stderr, "Usage: %s [options...] input.pam output.pam\n", argv[0]);
+  fputs("\n", stderr);
+  fputs("Read an image in Netpbm PAM format, iterate on it, and and save it\nafter closing the window.\n", stderr);
+  fputs("\n", stderr);
+  fputs("Options:\n", stderr);
+#ifndef STUPIDART_NO_INTERACTIVE
+  fputs("  -i       Run interactively.\n", stderr);
+#endif
+  fputs("  -m N     Set the maximum number of iterations to run.  Default: 1000.\n", stderr);
+  fputs("  -g 0..1  Set the goal difference (lower is better).  Default: 0.05.\n", stderr);
+  fputs("  -s SEED  Set the seed.\n", stderr);
+  fputs("  -d DEV   Set the computation device.\n", stderr);
+  fputs("  -p       Pick execution device interactively.\n", stderr);
+  fputs("  --help   Print this help and exit.\n", stderr);
+#ifdef STUPIDART_NO_INTERACTIVE
+  fputs("\nNote: This version of stupidart has been compiled without support for interactive use.\n", stderr);
+#endif
 }
 
 int main(int argc, char** argv) {
@@ -60,6 +129,12 @@ int main(int argc, char** argv) {
   bool device_interactive = false;
   char* input_image_path;
   char* output_image_path;
+
+#ifndef STUPIDART_NO_INTERACTIVE
+  bool interactive = false;
+#endif
+  int n_max_iterations = 1000;
+  float diff_goal = 0.05;
   uint32_t seed = (int32_t) lys_wall_time();
 
   if (argc > 1 && strcmp(argv[1], "--help") == 0) {
@@ -68,16 +143,31 @@ int main(int argc, char** argv) {
   }
 
   int c;
-  while ((c = getopt(argc, argv, "d:s:i")) != -1) {
+  while ((c = getopt(argc, argv, "him:g:s:d:p")) != -1) {
     switch (c) {
-    case 'd':
-      deviceopt = optarg;
+    case 'h':
+      print_help(argv);
+      return EXIT_SUCCESS;
       break;
+#ifndef STUPIDART_NO_INTERACTIVE
     case 'i':
-      device_interactive = true;
+      interactive = true;
+      break;
+#endif
+    case 'm':
+      n_max_iterations = atoi(optarg);
+      break;
+    case 'g':
+      assert(1 == sscanf(optarg, "%f", &diff_goal));
       break;
     case 's':
       seed = atoi(optarg);
+      break;
+    case 'd':
+      deviceopt = optarg;
+      break;
+    case 'p':
+      device_interactive = true;
       break;
     default:
       fprintf(stderr, "error: unknown option: %c\n\n", c);
@@ -116,30 +206,32 @@ int main(int argc, char** argv) {
   fprintf(stderr, "Seed: %d\n", seed);
   fprintf(stderr, "Image dimensions: %dx%d\n", width, height);
 
-  struct lys_context ctx;
-  lys_setup(&ctx, width, height, MAX_FPS, deviceopt, device_interactive, 0);
+  struct futhark_context_config *futcfg;
+  struct futhark_context *futctx;
+  char* opencl_device_name = NULL;
+  lys_setup_futhark_context(deviceopt, device_interactive,
+                            &futcfg, &futctx, &opencl_device_name);
+  if (opencl_device_name != NULL) {
+    fprintf(stderr, "Using OpenCL device: %s\n", opencl_device_name);
+    fprintf(stderr, "Use -d or -p to change this.\n");
+    free(opencl_device_name);
+  }
 
-  ctx.event_handler_data = NULL;
-  ctx.event_handler = handle_event;
-
-  struct futhark_i32_2d *image_fut = futhark_new_i32_2d(ctx.fut, image_data, height, width);
+  struct futhark_i32_2d *image_fut = futhark_new_i32_2d(futctx, image_data, height, width);
   free(image_data);
 
-  futhark_entry_init(ctx.fut, &ctx.state, seed, image_fut);
-
-  futhark_free_i32_2d(ctx.fut, image_fut);
-
-  SDL_ASSERT(TTF_Init() == 0);
-
-  struct internal internal;
-  ctx.event_handler_data = (void*) &internal;
-  internal.show_text = true;
-  internal.font = TTF_OpenFont("NeomatrixCode.ttf", FONT_SIZE);
-  SDL_ASSERT(internal.font != NULL);
-
-  lys_run_sdl(&ctx);
-
-  TTF_CloseFont(internal.font);
+  int32_t* output_image_data;
+#ifndef STUPIDART_NO_INTERACTIVE
+  if (!interactive) {
+    output_image_data = run_noninteractive(futctx, width, height, seed,
+                                           n_max_iterations, diff_goal, image_fut);
+  } else {
+    output_image_data = run_interactive(futctx, width, height, seed, image_fut);
+  }
+#else
+  output_image_data = run_noninteractive(futctx, width, height, seed,
+                                         n_max_iterations, diff_goal, image_fut);
+#endif
 
   FILE *output_image;
   if (strcmp(output_image_path, "-") == 0) {
@@ -148,12 +240,13 @@ int main(int argc, char** argv) {
     output_image = fopen(output_image_path, "w");
   }
   assert(output_image != NULL);
-  pam_save(output_image, ctx.data, ctx.width, ctx.height);
+  pam_save(output_image, output_image_data, width, height);
   assert(fclose(output_image) != EOF);
-  free(ctx.data);
 
-  futhark_context_free(ctx.fut);
-  futhark_context_config_free(ctx.futcfg);
+  free(output_image_data);
+
+  futhark_context_free(futctx);
+  futhark_context_config_free(futcfg);
 
   return EXIT_SUCCESS;
 }
