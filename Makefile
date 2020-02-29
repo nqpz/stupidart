@@ -12,6 +12,9 @@ else
 STUPIDART_NO_INTERACTIVE?=0
 ifeq ($(STUPIDART_NO_INTERACTIVE),1)
 LYS_SDL=0
+FUT_SOURCE=stupidart_noninteractive.fut
+else
+FUT_SOURCE=stupidart_lys.fut
 endif
 include lib/github.com/diku-dk/lys/setup_flags.mk
 ifeq ($(STUPIDART_NO_INTERACTIVE),1)
@@ -29,8 +32,8 @@ endif
 libstupidart.o: libstupidart.c
 	gcc -o $@ -c $< $(NOWARN_CFLAGS)
 
-libstupidart.c: stupidart.fut $(PROG_FUT_DEPS) shapes/triangle.fut shapes/rectangle.fut shapes/circle.fut
-	futhark $(LYS_BACKEND) -o libstupidart --library stupidart.fut
+libstupidart.c: $(PROG_FUT_DEPS) shapes/triangle.fut shapes/rectangle.fut shapes/circle.fut
+	futhark $(LYS_BACKEND) -o libstupidart --library $(FUT_SOURCE)
 
 clean:
 	rm -f stupidart libstupidart.o libstupidart.c libstupidart.h

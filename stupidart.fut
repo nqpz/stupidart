@@ -1,5 +1,4 @@
 import "lib/github.com/diku-dk/lys/lys"
-import "lib/github.com/diku-dk/lys/lys_core_entries"
 
 import "base"
 import "shapegen"
@@ -33,7 +32,7 @@ module lys_core = {
     in {startseed=seed, paused=false, diff_max, diff, shape,
         image_source, image_approx, image_diff, count=0, resetwhen=0}
 
-  entry init [h][w] (seed: i32) (image_source: [h][w]argb.colour) : state =
+  let init [h][w] (seed: i32) (image_source: [h][w]argb.colour): state =
     let image_source' = map (map (\c -> let (r, g, b, _a) = argb.to_rgba c
                                         in cielab_pack (srgb_to_cielab (r, g, b))))
                             image_source
@@ -45,7 +44,7 @@ module lys_core = {
   let diff_ratio (diff: f32) (s: state): f32 =
     diff / s.diff_max
 
-  entry text_content (s: state): (f32, bool) =
+  let text_content (s: state): (f32, bool) =
     (100 * diff_ratio s.diff s, s.resetwhen > 0)
 
   let keydown (key: i32) (s: state) =
@@ -104,12 +103,9 @@ module lys_core = {
 
   let resize _ _ (s: state): state = s
 
-  entry noninteractive [h][w] (seed: i32) (n_max_iterations: i32) (diff_goal: f32)
-                              (image_source: [h][w]argb.colour): ([h][w]argb.colour, i32, f32) =
+  let noninteractive [h][w] (seed: i32) (n_max_iterations: i32) (diff_goal: f32)
+                            (image_source: [h][w]argb.colour): ([h][w]argb.colour, i32, f32) =
     let s = init seed image_source
     let (s', n_iterations) = step n_max_iterations diff_goal s
     in (render s', n_iterations, 100 * diff_ratio s.diff s)
 }
-
-open lys_core
-open lys_core_entries lys_core
