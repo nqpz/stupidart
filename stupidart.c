@@ -214,7 +214,7 @@ int main(int argc, char** argv) {
   int32_t* image_data = pam_load(input_image, (unsigned int*) &width, (unsigned int*) &height);
   assert(image_data != NULL);
   assert(fclose(input_image) != EOF);
-  fprintf(stderr, "Seed: %d\n", seed);
+  fprintf(stderr, "Seed: %u\n", seed);
   fprintf(stderr, "Image dimensions: %dx%d\n", width, height);
 
   struct futhark_context_config *futcfg;
