@@ -35,8 +35,9 @@ Run `./stupidart --help` to see the available options.
 
 ## Controls for interactive use
 
-You can run `stupidart -i` and watch the image as it is generated (this
-will be slower than the default non-interactive approach).
+Unless you run `stupidart -I`, you will watch the image as it is
+generated (note that this is slower than the non-interactive approach due to some
+internals).
 
   - `1`: Generate random shapes (default)
   - `2`: Generate only triangles

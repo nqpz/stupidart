@@ -112,7 +112,7 @@ void print_help(char** argv) {
   fputs("\n", stderr);
   fputs("Options:\n", stderr);
 #ifndef STUPIDART_NO_INTERACTIVE
-  fputs("  -i       Run interactively.\n", stderr);
+  fputs("  -I       Do not run interactively.\n", stderr);
 #endif
   fputs("  -m N     Set the maximum number of iterations to run.  Default: 1000.\n", stderr);
   fputs("  -g 0..1  Set the goal difference (lower is better).  Default: 0.05.\n", stderr);
@@ -133,7 +133,7 @@ int main(int argc, char** argv) {
   char* output_image_path;
 
 #ifndef STUPIDART_NO_INTERACTIVE
-  bool interactive = false;
+  bool interactive = true;
 #endif
   int n_max_iterations = 1000;
   float diff_goal = 0.05;
@@ -149,15 +149,15 @@ int main(int argc, char** argv) {
   }
 
   int c;
-  while ((c = getopt(argc, argv, "him:g:Ts:d:p")) != -1) {
+  while ((c = getopt(argc, argv, "hIm:g:Ts:d:p")) != -1) {
     switch (c) {
     case 'h':
       print_help(argv);
       return EXIT_SUCCESS;
       break;
 #ifndef STUPIDART_NO_INTERACTIVE
-    case 'i':
-      interactive = true;
+    case 'I':
+      interactive = false;
       break;
 #endif
     case 'm':
