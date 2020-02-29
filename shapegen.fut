@@ -41,21 +41,27 @@ module mk_full_shape (o: shape) = {
     in (expand_reduce sz' get' op ne arr) :> [n]b
 
   -- Rendering utilities
-  let index (off_y:i32,off_x:i32) (w: i32) (t: t) (k: i32): i32 =
+  let index_and_diff [n] (c: color) (image_source_flat: [n]color) (off_y:i32,off_x:i32) (w: i32) (t: t) (k: i32): (i32, f32) =
     match o.coordinates t k
-    case #just (y, x) -> w * (off_y+y) + off_x + x
-    case #nothing -> -1
+    case #just (y, x) ->
+      let idx = w * (off_y+y) + off_x + x
+      in (idx, color_diff c image_source_flat[idx])
+    case #nothing -> (-1, 0)
 
-  let render [a][h][w] (image: *[h][w]color) (hG:i32,wG:i32) (arg:[a]((i32,i32,t),f32)) : (*[h][w]color,f32) =
-    let pixels = flatten image
+  let render [a][h][w] (image_source: [h][w]color) (image_approx: *[h][w]color)
+                       (image_diff: *[h][w]f32) (hG:i32,wG:i32) (arg:[a]((i32,i32,t),f32)):
+                       (*[h][w]color,*[h][w]f32,f32) =
+    let image_source_flat = flatten image_source
     let sz ((_,_,t:t),score) : i32 = if score > 0 then o.n_points t else 0
     let get ((j,i,t:t),_) (k:i32) =
-      (index (j*hG,i*wG) w t k,
-       o.color t)
-    let (indices,colors) = unzip <| expand sz get arg
-    let pixels' = scatter pixels indices colors
+      let c = o.color t
+      let (idx, diff) = index_and_diff c image_source_flat (j*hG,i*wG) w t k
+      in (idx, c, diff)
+    let (indices,colors,diffs) = unzip3 <| expand sz get arg
+    let image_approx' = unflatten h w (scatter (flatten image_approx) indices colors)
+    let image_diff' = unflatten h w (scatter (flatten image_diff) indices diffs)
     let score = reduce (+) 0 (map (\(_,s) -> f32.max 0 s) arg)
-    in (unflatten h w pixels',score)
+    in (image_approx',image_diff',score)
 
   -- Parallelisation using gridification
   let gridify 'b (G:i32) (rng:rng) (f:(i32,i32)->rng->b) : []b =
@@ -82,9 +88,7 @@ module mk_full_shape (o: shape) = {
   let Gs = [1i32,2,3,5,7,11]
 
   let add [h][w] (count:i32) (image_source: [h][w]color) (image_approx: *[h][w]color)
-                 (rng: rng): (*[h][w]color, f32) =
-    let image_diff = map2 (map2 color_diff) image_approx image_source
-
+                 (image_diff: *[h][w]f32) (rng: rng): (*[h][w]color, *[h][w]f32, f32) =
     let (rng, Gi) = dist_int.rand (0,length Gs - 1) rng
     let G = Gs[Gi]
     let n_tries = 500
@@ -116,5 +120,5 @@ module mk_full_shape (o: shape) = {
        map (map (reduce_comm best_try ((-1,-1,o.empty),-f32.inf))) tries_with_scores)
       :> [grid_cells]((i32,i32,o.t),f32)
 
-    in render image_approx (hG,wG) best_tries
+    in render image_source image_approx image_diff (hG,wG) best_tries
 }

@@ -8,8 +8,8 @@ module rectangle = mk_full_shape (import "shapes/rectangle")
 module circle = mk_full_shape (import "shapes/circle")
 module triangle = mk_full_shape (import "shapes/triangle")
 
-let same_dims_2d 'a [m][n][m1][n1] (_source: [m][n]a) (target: [m1][n1]a): [m][n]a =
-  target :> [m][n]a
+let same_dims_2d 'a 'b [m][n][m1][n1] (_source: [m][n]a) (target: [m1][n1]b): [m][n]b =
+  target :> [m][n]b
 
 module lys_core = {
 
@@ -19,6 +19,7 @@ module lys_core = {
                              shape: shape,
                              image_source: [h][w]color,
                              image_approx: [h][w]color,
+                             image_diff: [h][w]f32,
                              resetwhen: f32} -- <=0: no resetting,
                                              --  >0: auto reset when diff < s.reset
   type~ state = sized_state [][]
@@ -27,9 +28,10 @@ module lys_core = {
     let diff_max = reduce_comm (+) 0 (flatten (map (map color_diff_max) image_source))
     let black = cielab_pack (srgb_to_cielab (0, 0, 0))
     let image_approx = replicate h (replicate w black)
-    let diff = reduce_comm (+) 0 (flatten (map2 (map2 (color_diff)) image_approx image_source))
+    let image_diff = map2 (map2 color_diff) image_approx image_source
+    let diff = reduce_comm (+) 0 (flatten image_diff)
     in {startseed=seed, paused=false, diff_max, diff, shape,
-        image_source, image_approx, count=0, resetwhen=0}
+        image_source, image_approx, image_diff, count=0, resetwhen=0}
 
   entry init [h][w] (seed: i32) (image_source: [h][w]argb.colour) : state =
     let image_source' = map (map (\c -> let (r, g, b, _a) = argb.to_rgba c
@@ -59,13 +61,13 @@ module lys_core = {
     else s
 
   let step (n_iterations: i32) (s: state): state =
-    let image_approx = same_dims_2d s.image_source s.image_approx
-    let image_approx = copy image_approx
-    let (s', image_approx', diff', count') =
-      loop (s, image_approx, diff, count) = (s, image_approx, s.diff, s.count) for _i < n_iterations
+    let image_approx = copy (same_dims_2d s.image_source s.image_approx)
+    let image_diff = copy (same_dims_2d s.image_source s.image_diff)
+    let (s', image_approx', image_diff', diff', count') =
+      loop (s, image_approx, image_diff, diff, count) = (s, image_approx, image_diff, s.diff, s.count) for _i < n_iterations
       do let d = s.resetwhen
          in if diff_percent diff s < d
-            then (reset s with resetwhen = d, image_approx, diff, count)
+            then (reset s with resetwhen = d, image_approx, image_diff, diff, count)
             else let rng = rnge.rng_from_seed [count + s.startseed]
                  let (shape:shape, rng) =
                    if s.shape == #random
@@ -74,13 +76,14 @@ module lys_core = {
                              else if choice == 1 then #circle
                              else #rectangle), rng)
                    else (s.shape, rng)
-                 let (image_approx', improved) =
+                 let (image_approx', image_diff', improved) =
                    match shape
-                   case #triangle -> triangle.add count s.image_source image_approx rng
-                   case #circle -> circle.add count s.image_source image_approx rng
-                   case _rectangle_or_random -> rectangle.add count s.image_source image_approx rng
-                 in (s, image_approx', diff - improved, count + 1)
+                   case #triangle -> triangle.add count s.image_source image_approx image_diff rng
+                   case #circle -> circle.add count s.image_source image_approx image_diff rng
+                   case _rectangle_or_random -> rectangle.add count s.image_source image_approx image_diff rng
+                 in (s, image_approx', image_diff', diff - improved, count + 1)
     in s' with image_approx = image_approx'
+          with image_diff = image_diff'
           with diff = diff'
           with count = count'
 
