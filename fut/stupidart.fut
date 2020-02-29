@@ -107,4 +107,4 @@ let noninteractive [h][w] (seed: i32) (n_max_iterations: i32) (diff_goal: f32)
                           ([h][w]argb.colour, i32, f32) =
   let s = init seed image_source
   let (s', n_iterations) = step n_max_iterations diff_goal s
-  in (render s', n_iterations, 100 * diff_ratio s.diff s)
+  in (render s', n_iterations, 100 * diff_ratio s.diff s')
