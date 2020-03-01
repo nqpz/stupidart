@@ -2,7 +2,7 @@
 
 LYS_TTF=1
 
-STUPIDART_FUT_DEPS=$(shell ls *.fut; find fut -name \*.fut; find lib -name \*.fut)
+PROG_FUT_DEPS:=$(shell find fut -name \*.fut; find lib -name \*.fut)
 
 all: stupidart
 
@@ -14,9 +14,9 @@ else
 STUPIDART_NO_INTERACTIVE?=0
 ifeq ($(STUPIDART_NO_INTERACTIVE),1)
 LYS_SDL=0
-FUT_SOURCE=stupidart_noninteractive.fut
+FUT_SOURCE=fut/stupidart_noninteractive.fut
 else
-FUT_SOURCE=stupidart_lys.fut
+FUT_SOURCE=fut/stupidart_lys.fut
 endif
 ifeq ($(STUPIDART_NO_FREEIMAGE),1)
 CFLAGS_STUPIDART=-DSTUPIDART_NO_FREEIMAGE
@@ -41,7 +41,7 @@ endif
 libstupidart.o: libstupidart.c
 	gcc -o $@ -c $< $(NOWARN_CFLAGS)
 
-libstupidart.c: $(STUPIDART_FUT_DEPS)
+libstupidart.c: $(PROG_FUT_DEPS)
 	futhark $(LYS_BACKEND) -o libstupidart --library $(FUT_SOURCE)
 
 clean:

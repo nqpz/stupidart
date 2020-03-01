@@ -1,5 +1,5 @@
-import "lib/github.com/athas/matte/colour"
-module core = import "fut/stupidart"
+import "../lib/github.com/athas/matte/colour"
+module core = import "stupidart"
 
 entry noninteractive [h][w] (seed: i32) (n_max_iterations: i32) (diff_goal: f32)
                             (image_source: [h][w]argb.colour):
