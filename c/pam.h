@@ -1,4 +1,10 @@
-/* Netpbm PAM graphics format loading and saving without alpha channel. */
+#ifndef STUPIDART_PAM
+#define STUPIDART_PAM
+
+#include <assert.h>
+
+/* Backup image library: Netpbm PAM graphics format loading and saving without
+   alpha channel (subset of actual format). */
 
 int32_t* pam_load(FILE *f, unsigned int *width, unsigned int *height) {
   assert(0 == fscanf(f, "P7\n"));
@@ -22,11 +28,11 @@ int32_t* pam_load(FILE *f, unsigned int *width, unsigned int *height) {
   }
   for (unsigned int i = 0; i < *width * *height; i++) {
     int r, g, b;
-    b = fgetc(f);
-    g = fgetc(f);
     r = fgetc(f);
+    g = fgetc(f);
+    b = fgetc(f);
 
-    image[i] = (0xff << 24) | (b << 16) | (g << 8) | r;
+    image[i] = 0xff000000 | (r << 16) | (g << 8) | b;
   }
   return image;
 }
@@ -41,12 +47,15 @@ void pam_save(FILE* f, const int32_t* image,
   fprintf(f, "TUPLTYPE RGB\n");
   fprintf(f, "ENDHDR\n");
   for (unsigned int i = 0; i < width * height; i++) {
+    int32_t color = image[i];
     int r, g, b;
-    r = image[i] & 0x0000ff;
-    g = (image[i] & 0x00ff00) >> 8;
-    b = (image[i] & 0xff0000) >> 16;
-    fputc(b, f);
-    fputc(g, f);
+    r = (color & 0xff0000) >> 16;
+    g = (color & 0x00ff00) >> 8;
+    b = color & 0x0000ff;
     fputc(r, f);
+    fputc(g, f);
+    fputc(b, f);
   }
 }
+
+#endif

@@ -7,29 +7,35 @@
 Approximate an input image by adding random shapes on top of each other
 in parallel.
 
-Dependency: [Futhark](http://futhark-lang.org).
+Dependencies:
 
-Optional dependencies: The SDL2 and SDL2-ttf libraries with associated
-header files.
+  - [Futhark](http://futhark-lang.org/)
+
+Optional dependencies:
+
+  - SDL2 and SDL2-ttf with associated header files
+  - [FreeImage](http://freeimage.sourceforge.net/)
 
 ## Building
 
 To build, first run `futhark pkg sync` once.
 
-Then run `make` to build.  To build without the SDL dependency, instead
-run `STUPIDART_NO_INTERACTIVE=1 make`.  You can also use the
-backend-specific `LYS_*` environment variables mentioned in
-[Lys](https://github.com/diku-dk/lys).
+Then run `make` to build.
+
+  - To build without the SDL dependency, instead run
+    `STUPIDART_NO_INTERACTIVE=1 make`.
+
+  - To build without the FreeImage dependency, instead run
+    `STUPIDART_NO_FREEIMAGE=1 make`.  This means you will only be able
+    to read and write images in the Netpbm PAM format.  You can use
+    ImageMagick's `convert` utility to convert from and to this format.
+
+  - You can also use the backend-specific `LYS_*` environment variables
+    mentioned in [Lys](https://github.com/diku-dk/lys) before `make`.
 
 ## Running
 
-Run `./stupidart input.pam output.pam` to generate art.  You can use
-ImageMagick's `convert` utility to convert an image into the Netpbm PAM
-format.  Example:
-
-```
-convert input.jpg pam:- | ./stupidart - - | convert pam:- output.png
-```
+Run `./stupidart <input image> <output image>` to generate art.
 
 Run `./stupidart --help` to see the available options.
 

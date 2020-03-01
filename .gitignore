@@ -1,7 +1,3 @@
-# Ignore non-directories in root so we can use it as scratch space.
-/*
-!/*/
-
 /*.o
 /libstupidart.h
 /libstupidart.c

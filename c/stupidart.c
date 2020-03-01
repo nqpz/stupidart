@@ -14,10 +14,37 @@
 #define _XOPEN_SOURCE
 #include <unistd.h>
 #include <getopt.h>
-#include "pam.h"
 
 #define MAX_FPS 60
 #define FONT_SIZE 20
+
+#ifndef STUPIDART_NO_FREEIMAGE
+#include <FreeImage.h>
+#include "freeimage_stupidart.h"
+
+int32_t* image_load(const char* filename, FILE *f, unsigned int *width, unsigned int *height) {
+  return freeimage_load(filename, f, width, height);
+}
+
+void image_save(const char* filename, FILE* f, const int32_t* image,
+                unsigned int width, unsigned int height) {
+  freeimage_save(filename, f, image, width, height);
+}
+#else
+#include "pam.h"
+
+int32_t* image_load(const char* filename, FILE *f,
+                    unsigned int *width, unsigned int *height) {
+  (void) filename;
+  return pam_load(f, width, height);
+}
+
+void image_save(const char* filename, FILE* f, const int32_t* image,
+                unsigned int width, unsigned int height) {
+  (void) filename;
+  pam_save(f, image, width, height);
+}
+#endif
 
 int32_t* run_noninteractive(struct futhark_context *futctx,
                             int width, int height, int seed,
@@ -106,9 +133,9 @@ int32_t* run_interactive(struct futhark_context *futctx,
 #endif
 
 void print_help(char** argv) {
-  fprintf(stderr, "Usage: %s [options...] input.pam output.pam\n", argv[0]);
+  fprintf(stderr, "Usage: %s [options...] <input image> <output image>\n", argv[0]);
   fputs("\n", stderr);
-  fputs("Read an image in Netpbm PAM format, iterate on it, and and save it\nafter closing the window.\n", stderr);
+  fputs("Read an image, iterate on it, and and save it after closing the window.\n", stderr);
   fputs("\n", stderr);
   fputs("Options:\n", stderr);
 #ifndef STUPIDART_NO_INTERACTIVE
@@ -211,7 +238,12 @@ int main(int argc, char** argv) {
     input_image = fopen(input_image_path, "r");
   }
   assert(input_image != NULL);
-  int32_t* image_data = pam_load(input_image, (unsigned int*) &width, (unsigned int*) &height);
+
+#ifndef STUPIDART_NO_FREEIMAGE
+  FreeImage_Initialise(false);
+#endif
+
+  int32_t* image_data = image_load(input_image_path, input_image, (unsigned int*) &width, (unsigned int*) &height);
   assert(image_data != NULL);
   assert(fclose(input_image) != EOF);
   fprintf(stderr, "Seed: %u\n", seed);
@@ -251,13 +283,17 @@ int main(int argc, char** argv) {
     output_image = fopen(output_image_path, "w");
   }
   assert(output_image != NULL);
-  pam_save(output_image, output_image_data, width, height);
+  image_save(output_image_path, output_image, output_image_data, width, height);
   assert(fclose(output_image) != EOF);
 
   free(output_image_data);
 
   futhark_context_free(futctx);
   futhark_context_config_free(futcfg);
+
+#ifndef STUPIDART_NO_FREEIMAGE
+  FreeImage_DeInitialise();
+#endif
 
   return EXIT_SUCCESS;
 }
