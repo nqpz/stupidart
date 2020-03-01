@@ -9,6 +9,7 @@ addons:
     - libsdl2-ttf-dev
     - ocl-icd-libopencl1
     - opencl-headers
+    - libfreeimage-dev
 
 before_install:
  # install Futhark
