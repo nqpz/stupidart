@@ -44,6 +44,7 @@ int32_t* freeimage_load(const char* filename, FILE *f, unsigned int *width, unsi
 
   int32_t* image = (int32_t*) malloc(*width * *height * sizeof(int32_t));
   if (image == NULL) {
+    FreeImage_Unload(dib);
     return NULL;
   }
   for (int y = 0; y < (int) *height; y++) {
