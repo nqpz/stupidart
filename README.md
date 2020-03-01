@@ -13,7 +13,7 @@ Dependencies:
 
 Optional dependencies:
 
-  - SDL2 and SDL2-ttf with associated header files
+  - SDL2 and SDL2-ttf
   - [FreeImage](http://freeimage.sourceforge.net/)
 
 ## Building
