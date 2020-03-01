@@ -89,11 +89,11 @@ module mk_full_shape (o: shape) = {
 
   let add [h][w] (count: i32) (image_source: [h][w]color) (image_approx: *[h][w]color)
                  (image_diff: *[h][w]f32) (rng: rng): (*[h][w]color, *[h][w]f32, f32) =
-    let (rng, Gi) = dist_int.rand (0,length Gs - 1) rng
+    let (rng, Gi) = dist_int.rand (0, length Gs - 1) rng
     let G = Gs[Gi]
-    let n_tries = 500
     let (hG, wG) = (h / G, w / G)
     let grid_cells = G * G
+    let n_tries = 5000 / grid_cells
     let tries: [grid_cells][n_tries](i32, i32, o.t) =
       gridify G rng (\(j, i) rng ->
                        let rngs = rnge.split_rng n_tries rng
