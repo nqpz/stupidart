@@ -113,7 +113,7 @@ module mk_full_shape (o: shape) = {
     let flat_tries_with_scores =
       zip flat_tries <| expand_outer_reduce sz get (+) 0 flat_tries
     let tries_with_scores: [G][G][n_tries]((i32, i32, o.t), f32) =
-      map (unflatten G n_tries) <| unflatten G (G * n_tries) flat_tries_with_scores
+      map (unflatten G n_tries) (unflatten G (G * n_tries) flat_tries_with_scores)
     let best_try (tr0, s0) (tr1, s1) = if s0 > s1 then (tr0, s0) else (tr1, s1)
     let best_tries: [grid_cells]((i32, i32, o.t), f32) =
       (flatten <| map (map (reduce_comm best_try ((-1, -1, o.empty), -f32.inf)))
