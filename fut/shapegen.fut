@@ -1,24 +1,6 @@
 import "../lib/github.com/diku-dk/segmented/segmented"
 import "base"
 
--- A few flattening utility functions that are still not
--- available in the segmented library
-let expand_reduce 'a 'b (sz: a -> i32) (get: a -> i32 -> b)
-                        (op: b -> b -> b) (ne: b) (arr: []a): []b =
-  let szs = map sz arr
-  let idxs = replicated_iota szs
-  let flags = map2 (!=) idxs (rotate (-1) idxs)
-  let iotas = segmented_iota flags
-  let vs = map2 (\i -> get arr[i]) idxs iotas
-  in segmented_reduce op ne flags vs
-
-let expand_outer_reduce 'a 'b [n] (sz: a -> i32) (get: a -> i32 -> b)
-                                  (op: b -> b -> b) (ne: b) (arr: [n]a): [n]b =
-  let sz' x = let s = sz x
-              in if s == 0 then 1 else s
-  let get' x i = if sz x == 0 then ne else get x i
-  in expand_reduce sz' get' op ne arr :> [n]b
-
 module type shape = {
   type t
 
