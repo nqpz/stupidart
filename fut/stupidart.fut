@@ -37,6 +37,7 @@ let init [h][w] (seed: i32) (image_source: [h][w]argb.colour): state =
 
 let reset (s: state): state =
   state_from_image_source s.startseed s.shape s.image_source
+  with count = s.count
 
 let diff_ratio (diff: f32) (s: state): f32 =
   diff / s.diff_max
@@ -59,22 +60,20 @@ let keydown (key: i32) (s: state) =
 let step_step [h][w] ((s, image_approx, image_diff, diff, count):
                        (state, *[h][w]color, *[h][w]f32, f32, i32)):
                        (state, *[h][w]color, *[h][w]f32, f32, i32) =
-  if diff_ratio diff s < s.resetwhen
-  then (reset s with resetwhen = s.resetwhen, image_approx, image_diff, diff, count)
-  else let rng = rnge.rng_from_seed [count + s.startseed]
-       let (shape:shape, rng) =
-         if s.shape == #random
-         then let (rng, choice) = dist_int.rand (0, 2) rng
-              in ((if choice == 0 then #triangle
-                   else if choice == 1 then #circle
-                   else #rectangle), rng)
-         else (s.shape, rng)
-       let (image_approx', image_diff', improved) =
-         match shape
-         case #triangle -> triangle.add count s.image_source image_approx image_diff rng
-         case #circle -> circle.add count s.image_source image_approx image_diff rng
-         case _rectangle_or_random -> rectangle.add count s.image_source image_approx image_diff rng
-       in (s, image_approx', image_diff', diff - improved, count + 1)
+  let rng = rnge.rng_from_seed [count + s.startseed]
+  let (shape:shape, rng) =
+    if s.shape == #random
+    then let (rng, choice) = dist_int.rand (0, 2) rng
+         in ((if choice == 0 then #triangle
+              else if choice == 1 then #circle
+              else #rectangle), rng)
+    else (s.shape, rng)
+  let (image_approx', image_diff', improved) =
+    match shape
+    case #triangle -> triangle.add count s.image_source image_approx image_diff rng
+    case #circle -> circle.add count s.image_source image_approx image_diff rng
+    case _rectangle_or_random -> rectangle.add count s.image_source image_approx image_diff rng
+  in (s, image_approx', image_diff', diff - improved, count + 1)
 
 let step (n_max_iterations: i32) (diff_goal: f32) (s: state): (state, i32) =
   let image_approx = copy (same_dims_2d s.image_source s.image_approx)
@@ -84,11 +83,13 @@ let step (n_max_iterations: i32) (diff_goal: f32) (s: state): (state, i32) =
       ((s, image_approx, image_diff, s.diff, s.count), 0)
     while diff_ratio diff s > diff_goal && step_i < n_max_iterations
     do (step_step (s, image_approx, image_diff, diff, count), step_i + 1)
-  in (s' with image_approx = image_approx'
-         with image_diff = image_diff'
-         with diff = diff'
-         with count = count',
-      n_iterations)
+  in if diff_ratio diff' s' < s'.resetwhen
+     then (reset s' with resetwhen = s'.resetwhen, 0)
+     else (s' with image_approx = image_approx'
+              with image_diff = image_diff'
+              with diff = diff'
+              with count = count',
+	   n_iterations)
 
 let event (e: event) (s: state): state =
   match e
