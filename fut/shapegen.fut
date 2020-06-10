@@ -100,5 +100,5 @@ module mk_full_shape (o: shape) = {
     let best_tries: [grid_cells]((i32, i32, o.t), f32) =
       (flatten <| map (map (reduce_comm best_try ((-1, -1, o.empty), -f32.inf)))
                       tries_with_scores) :> [grid_cells]((i32, i32, o.t), f32)
-    in render image_source image_approx image_diff (hG, wG) best_tries
+    in render image_source image_approx (copy image_diff) (hG, wG) best_tries
 }
