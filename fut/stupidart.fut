@@ -52,8 +52,7 @@ let keydown (key: i32) (s: state) =
   else if key == SDLK_3 then s with shape = #circle
   else if key == SDLK_4 then s with shape = #rectangle
   else if key == SDLK_r then (if s.resetwhen <= 0
-                              then let d = diff_ratio s.diff s
-                                   in reset s with resetwhen = d
+                              then reset s with resetwhen = diff_ratio s.diff s
                               else reset s)
   else s
 
