@@ -22,36 +22,36 @@
 #include <FreeImage.h>
 #include "freeimage_stupidart.h"
 
-int32_t* image_load(const char* filename, FILE *f, unsigned int *width, unsigned int *height) {
-  return freeimage_load(filename, f, width, height);
+uint32_t* image_load(const char* filename, FILE *f, unsigned int *width, unsigned int *height) {
+  return (uint32_t*)freeimage_load(filename, f, width, height);
 }
 
-void image_save(const char* filename, FILE* f, const int32_t* image,
+void image_save(const char* filename, FILE* f, const uint32_t* image,
                 unsigned int width, unsigned int height) {
-  freeimage_save(filename, f, image, width, height);
+  freeimage_save(filename, f, (int32_t*)image, width, height);
 }
 #else
 #include "pam.h"
 
-int32_t* image_load(const char* filename, FILE *f,
-                    unsigned int *width, unsigned int *height) {
+uint32_t* image_load(const char* filename, FILE *f,
+                     unsigned int *width, unsigned int *height) {
   (void) filename;
   return pam_load(f, width, height);
 }
 
-void image_save(const char* filename, FILE* f, const int32_t* image,
+void image_save(const char* filename, FILE* f, const uint32_t* image,
                 unsigned int width, unsigned int height) {
   (void) filename;
   pam_save(f, image, width, height);
 }
 #endif
 
-int32_t* run_noninteractive(struct futhark_context *futctx,
-                            int width, int height, int seed,
-                            int n_max_iterations, float diff_goal,
-                            struct futhark_i32_2d *image_fut) {
-  struct futhark_i32_2d *output_image_fut;
-  int32_t* output_image_data = (int32_t*) malloc(width * height * sizeof(int32_t));
+uint32_t* run_noninteractive(struct futhark_context *futctx,
+                             int width, int height, int seed,
+                             int n_max_iterations, float diff_goal,
+                             struct futhark_u32_2d *image_fut) {
+  struct futhark_u32_2d *output_image_fut;
+  uint32_t* output_image_data = (uint32_t*) malloc(width * height * sizeof(int32_t));
   if (output_image_data == NULL) {
     return NULL;
   }
@@ -59,8 +59,8 @@ int32_t* run_noninteractive(struct futhark_context *futctx,
   float diff;
   futhark_entry_noninteractive(futctx, &output_image_fut, &n_iterations, &diff,
                                seed, n_max_iterations, diff_goal, image_fut);
-  FUT_CHECK(futctx, futhark_values_i32_2d(futctx, output_image_fut, output_image_data));
-  FUT_CHECK(futctx, futhark_free_i32_2d(futctx, output_image_fut));
+  FUT_CHECK(futctx, futhark_values_u32_2d(futctx, output_image_fut, output_image_data));
+  FUT_CHECK(futctx, futhark_free_u32_2d(futctx, output_image_fut));
   fprintf(stderr, "Final number of iterations: %d\nFinal difference: %f%%\n", n_iterations, diff);
   return output_image_data;
 }
@@ -101,10 +101,10 @@ void handle_event(struct lys_context *ctx, enum lys_event event) {
   }
 }
 
-int32_t* run_interactive(struct futhark_context *futctx,
-                         int width, int height, int seed,
-                         bool show_text_initial,
-                         struct futhark_i32_2d *image_fut) {
+uint32_t* run_interactive(struct futhark_context *futctx,
+                          int width, int height, int seed,
+                          bool show_text_initial,
+                          struct futhark_u32_2d *image_fut) {
   struct lys_context ctx;
   lys_setup(&ctx, width, height, MAX_FPS, 0);
   ctx.fut = futctx;
@@ -114,7 +114,7 @@ int32_t* run_interactive(struct futhark_context *futctx,
 
   futhark_entry_init(ctx.fut, &ctx.state, seed, image_fut);
 
-  futhark_free_i32_2d(ctx.fut, image_fut);
+  futhark_free_u32_2d(ctx.fut, image_fut);
 
   SDL_ASSERT(TTF_Init() == 0);
 
@@ -243,7 +243,7 @@ int main(int argc, char** argv) {
   FreeImage_Initialise(false);
 #endif
 
-  int32_t* image_data = image_load(input_image_path, input_image, (unsigned int*) &width, (unsigned int*) &height);
+  uint32_t* image_data = image_load(input_image_path, input_image, (unsigned int*) &width, (unsigned int*) &height);
   assert(image_data != NULL);
   assert(fclose(input_image) != EOF);
   fprintf(stderr, "Seed: %u\n", seed);
@@ -260,10 +260,10 @@ int main(int argc, char** argv) {
     free(opencl_device_name);
   }
 
-  struct futhark_i32_2d *image_fut = futhark_new_i32_2d(futctx, image_data, height, width);
+  struct futhark_u32_2d *image_fut = futhark_new_u32_2d(futctx, image_data, height, width);
   free(image_data);
 
-  int32_t* output_image_data;
+  uint32_t* output_image_data;
 #ifndef STUPIDART_NO_INTERACTIVE
   if (!interactive) {
     output_image_data = run_noninteractive(futctx, width, height, seed,
