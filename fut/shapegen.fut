@@ -40,10 +40,10 @@ module mk_full_shape (o: shape) = {
       let c = o.color t
       let (idx, diff) = index_and_diff c image_source_flat (j * hG, i * wG) w t k
       in (idx, c, diff)
-    let (indices,colors,diffs) = unzip3 <| expand sz get arg
-    let image_approx' = unflatten h w <| scatter (flatten image_approx) indices colors
-    let image_diff' = unflatten h w <| scatter (flatten image_diff) indices diffs
-    let score = reduce (+) 0 <| map (\(_, s) -> f32.max 0 s) arg
+    let (indices,colors,diffs) = unzip3 (expand sz get arg)
+    let image_approx' = unflatten h w (scatter (flatten image_approx) indices colors)
+    let image_diff' = unflatten h w (scatter (flatten image_diff) indices diffs)
+    let score = f32.sum (map (\(_, s) -> f32.max 0 s) arg)
     in (image_approx', image_diff', score)
 
   -- Parallelisation using gridification

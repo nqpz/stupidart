@@ -21,11 +21,11 @@ type sized_state [h][w] = {startseed:i32, paused: bool, diff_max: f32,
 type~ state = sized_state [][]
 
 let state_from_image_source [h][w] (seed: i32) (shape:shape) (image_source: [h][w]color): state =
-  let diff_max = reduce_comm (+) 0 <| flatten (map (map color_diff_max) image_source)
+  let diff_max = f32.sum (flatten (map (map color_diff_max) image_source))
   let black = cielab_pack <| srgb_to_cielab (0, 0, 0)
   let image_approx = replicate h <| replicate w black
   let image_diff = map2 (map2 color_diff) image_approx image_source
-  let diff = reduce_comm (+) 0 <| flatten image_diff
+  let diff =  f32.sum (flatten image_diff)
   in {startseed=seed, paused=false, diff_max, diff, shape,
       image_source, image_approx, image_diff, count=0, resetwhen=0}
 
