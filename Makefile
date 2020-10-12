@@ -35,7 +35,6 @@ else
 stupidart: libstupidart.o lib/github.com/diku-dk/lys/liblys.c lib/github.com/diku-dk/lys/liblys.h lib/github.com/diku-dk/lys/context_setup.c lib/github.com/diku-dk/lys/context_setup.h c/stupidart.c c/pam.h c/freeimage_stupidart.h
 	gcc lib/github.com/diku-dk/lys/liblys.c lib/github.com/diku-dk/lys/context_setup.c c/stupidart.c -I. -DPROGHEADER='"libstupidart.h"' libstupidart.o -o $@ $(CFLAGS) $(LDFLAGS) $(LDFLAGS_STUPIDART) $(CFLAGS_STUPIDART)
 endif
-endif
 
 # We do not want warnings and such for the generated code.
 libstupidart.o: libstupidart.c
@@ -43,6 +42,7 @@ libstupidart.o: libstupidart.c
 
 libstupidart.c: $(PROG_FUT_DEPS)
 	futhark $(LYS_BACKEND) -o libstupidart --library $(FUT_SOURCE)
+endif
 
 clean:
 	rm -f stupidart libstupidart.o libstupidart.c libstupidart.h
