@@ -19,8 +19,8 @@ module mk_full_shape (o: shape) = {
   type t = o.t
 
   -- A few general utilities
-  let indices [n] 'a (_: [n]a): [n]i32 = 0..<n
-  let indexed [n] 'a (xs: [n]a): [n](i32, a) = zip (0..<n) xs
+  let indices [n] 'a (_: [n]a): [n]i32 = map i32.i64 (0..<n)
+  let indexed [n] 'a (xs: [n]a): [n](i32, a) = zip (map i32.i64 (0..<n)) xs
 
   -- Rendering utilities
   let index_and_diff [n] (c: color) (image_source_flat: [n]color)
@@ -35,11 +35,11 @@ module mk_full_shape (o: shape) = {
                        (image_diff: *[h][w]f32) (hG: i32, wG: i32) (arg: [a]((i32, i32, t), f32)):
                        (*[h][w]color, *[h][w]f32, f32) =
     let image_source_flat = flatten image_source
-    let sz ((_, _, t:t), score): i32 = if score > 0 then o.n_points t else 0
-    let get ((j, i, t:t), _) (k: i32) =
+    let sz ((_, _, t:t), score): i64 = if score > 0 then i64.i32 (o.n_points t) else 0
+    let get ((j, i, t:t), _) (k: i64) =
       let c = o.color t
-      let (idx, diff) = index_and_diff c image_source_flat (j * hG, i * wG) w t k
-      in (idx, c, diff)
+      let (idx, diff) = index_and_diff c image_source_flat (j * hG, i * wG) (i32.i64 w) t (i32.i64 k)
+      in (i64.i32 idx, c, diff)
     let (indices,colors,diffs) = unzip3 (expand sz get arg)
     let image_approx' = unflatten h w (scatter (flatten image_approx) indices colors)
     let image_diff' = unflatten h w (scatter (flatten image_diff) indices diffs)
@@ -48,10 +48,11 @@ module mk_full_shape (o: shape) = {
 
   -- Parallelisation using gridification
   let gridify 'b (G: i32) (rng: rng) (f:(i32, i32) -> rng -> b): []b =
+    let G' = i64.i32 G in
     flatten <| map (\(yG, rng) ->
                       map (\(xG, rng) -> f (yG, xG) rng)
-                          (indexed (rnge.split_rng G rng))
-                   ) <| indexed (rnge.split_rng G rng)
+                          (indexed (rnge.split_rng G' rng))
+                   ) <| indexed (rnge.split_rng G' rng)
 
   -- Parallelising art generation
   --
@@ -71,11 +72,12 @@ module mk_full_shape (o: shape) = {
 
   let add [h][w] (count: i32) (image_source: [h][w]color) (image_approx: *[h][w]color)
                  (image_diff: *[h][w]f32) (rng: rng): (*[h][w]color, *[h][w]f32, f32) =
-    let (rng, Gi) = dist_int.rand (0,length Gs - 1) rng
+    let (rng, Gi) = dist_int.rand (0, i32.i64 (length Gs - 1)) rng
     let G = Gs[Gi]
+    let G' = i64.i32 G
     let n_tries = 500
-    let (hG, wG) = (h / G, w / G)
-    let grid_cells = G * G
+    let (hG, wG) = (i32.i64 h / G, i32.i64 w / G)
+    let grid_cells = i64.i32 (G * G)
     let tries: [grid_cells][n_tries](i32, i32, o.t) =
       gridify G rng (\(j, i) rng ->
                        let rngs = rnge.split_rng n_tries rng
@@ -84,9 +86,9 @@ module mk_full_shape (o: shape) = {
               :> [grid_cells][n_tries](i32, i32, o.t)
 
     let flat_tries = flatten tries
-    let sz (_, _, t: o.t): i32 = o.n_points t
-    let get (j, i, t: o.t) (k: i32): f32 =
-      (match o.coordinates t k
+    let sz (_, _, t: o.t): i64 = i64.i32 (o.n_points t)
+    let get (j, i, t: o.t) (k: i64): f32 =
+      (match o.coordinates t (i32.i64 k)
        case #just (y, x) ->
          let old = image_diff[j * hG + y, i * wG + x]
          let new = color_diff (o.color t) image_source[j * hG + y, i * wG + x]
@@ -94,8 +96,8 @@ module mk_full_shape (o: shape) = {
        case #nothing -> 0)
     let flat_tries_with_scores =
       zip flat_tries <| expand_outer_reduce sz get (+) 0 flat_tries
-    let tries_with_scores: [G][G][n_tries]((i32, i32, o.t), f32) =
-      unflatten_3d G G n_tries flat_tries_with_scores
+    let tries_with_scores: [G'][G'][n_tries]((i32, i32, o.t), f32) =
+      unflatten_3d G' G' n_tries flat_tries_with_scores
     let best_try (tr0, s0) (tr1, s1) = if s0 > s1 then (tr0, s0) else (tr1, s1)
     let best_tries: [grid_cells]((i32, i32, o.t), f32) =
       (flatten <| map (map (reduce_comm best_try ((-1, -1, o.empty), -f32.inf)))
