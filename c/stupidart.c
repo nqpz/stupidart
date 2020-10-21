@@ -11,7 +11,6 @@
 #include "lib/github.com/diku-dk/lys/context_setup.h"
 #endif
 
-#define _XOPEN_SOURCE
 #include <unistd.h>
 #include <getopt.h>
 
