@@ -1,6 +1,6 @@
 import "../lib/github.com/diku-dk/cpprandom/random"
 import "../lib/github.com/athas/matte/colour"
-import "cielab"
+open import "cielab"
 
 module rnge = minstd_rand
 module dist = uniform_real_distribution f32 rnge
