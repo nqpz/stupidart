@@ -1,5 +1,5 @@
 require {
-  github.com/diku-dk/lys 0.1.12 #34e5ff985fefac9a9627d49e26a19ef5352e7019
+  github.com/diku-dk/lys 0.1.13 #671ee908a5b15ffa869a2251c8eb418158a5cce9
   github.com/athas/matte 0.1.2 #2ce1a39b29c329504cb2d849e305cbcc17f701d5
   github.com/diku-dk/cpprandom 1.3.0 #68b67cb55242db59b79d94b5cdf961b2d654e698
   github.com/diku-dk/segmented 0.4.2 #7bad610241494839d3976f6ee4991ba7af8e8c00
