@@ -81,7 +81,7 @@ let step (n_max_iterations: i32) (diff_goal: f32) (s: state): (state, i32) =
     loop ((s, image_approx, image_diff, diff, count), step_i) =
       ((s, image_approx, image_diff, s.diff, s.count), 0)
     while diff_ratio diff s > diff_goal && step_i < n_max_iterations
-    do (step_step (s, image_approx, image_diff, diff, count), step_i + 1)
+    do (step_step (copy (s, image_approx, image_diff, diff, count)), step_i + 1)
   in if diff_ratio diff' s' < s'.resetwhen
      then (reset s' with resetwhen = s'.resetwhen, 0)
      else (s' with image_approx = image_approx'
