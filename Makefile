@@ -3,6 +3,9 @@
 LYS_TTF=1
 
 PROG_FUT_DEPS:=$(shell find fut -name \*.fut; find lib -name \*.fut)
+SELF_DIR=lib/github.com/diku-dk/lys
+LYS_FRONTEND=sdl
+FRONTEND_DIR = $(SELF_DIR)/$(LYS_FRONTEND)
 
 all: stupidart
 
@@ -25,24 +28,33 @@ else
 CFLAGS_STUPIDART=
 LDFLAGS_STUPIDART=-lfreeimage
 endif
-include lib/github.com/diku-dk/lys/setup_flags.mk
+include $(SELF_DIR)/setup_flags.mk
 ifeq ($(STUPIDART_NO_INTERACTIVE),1)
 CFLAGS_NO_INTERACTIVE=$(NOWARN_CFLAGS) -Wall -Wextra -pedantic -DLYS_BACKEND_$(LYS_BACKEND) -DSTUPIDART_NO_INTERACTIVE
 LDFLAGS_NO_INTERACTIVE=-lm $(DEVICE_LDFLAGS)
-stupidart: libstupidart.o lib/github.com/diku-dk/lys/context_setup.c lib/github.com/diku-dk/lys/context_setup.h c/stupidart.c c/pam.h c/freeimage_stupidart.h
-	gcc lib/github.com/diku-dk/lys/context_setup.c c/stupidart.c -I. -DPROGHEADER='"libstupidart.h"' libstupidart.o -o $@ $(CFLAGS_NO_INTERACTIVE) $(LDFLAGS_NO_INTERACTIVE) $(LDFLAGS_STUPIDART) $(CFLAGS_STUPIDART)
+stupidart: stupidart_wrapper.o stupidart_printf.h font_data.h $(FRONTEND_DIR)/liblys.h $(SELF_DIR)/shared.c $(SELF_DIR)/shared.h c/stupidart.c c/pam.h c/freeimage_stupidart.h
+	gcc $(SELF_DIR)/shared.c c/stupidart.c -I. -I$(SELF_DIR) -DPROGHEADER='"stupidart_wrapper.h"' -DPRINTFHEADER='"stupidart_printf.h"' stupidart_wrapper.o -o $@ $(CFLAGS_NO_INTERACTIVE) $(LDFLAGS_NO_INTERACTIVE) $(LDFLAGS_STUPIDART) $(CFLAGS_STUPIDART)
+RT)
 else
-stupidart: libstupidart.o lib/github.com/diku-dk/lys/liblys.c lib/github.com/diku-dk/lys/liblys.h lib/github.com/diku-dk/lys/context_setup.c lib/github.com/diku-dk/lys/context_setup.h c/stupidart.c c/pam.h c/freeimage_stupidart.h
-	gcc lib/github.com/diku-dk/lys/liblys.c lib/github.com/diku-dk/lys/context_setup.c c/stupidart.c -I. -DPROGHEADER='"libstupidart.h"' libstupidart.o -o $@ $(CFLAGS) $(LDFLAGS) $(LDFLAGS_STUPIDART) $(CFLAGS_STUPIDART)
+stupidart: stupidart_wrapper.o stupidart_printf.h font_data.h $(FRONTEND_DIR)/liblys.c $(FRONTEND_DIR)/liblys.h $(SELF_DIR)/shared.c $(SELF_DIR)/shared.h c/stupidart.c c/pam.h c/freeimage_stupidart.h
+	gcc $(FRONTEND_DIR)/liblys.c $(SELF_DIR)/shared.c c/stupidart.c -I. -I$(SELF_DIR) -DPROGHEADER='"stupidart_wrapper.h"' -DPRINTFHEADER='"stupidart_printf.h"' stupidart_wrapper.o -o $@ $(CFLAGS) $(LDFLAGS) $(LDFLAGS_STUPIDART) $(CFLAGS_STUPIDART)
 endif
 
+stupidart_printf.h: stupidart_wrapper.c
+	python3 $(SELF_DIR)/gen_printf.py $(FRONTEND_DIR) $@ $<
+
+font_data.h: $(SELF_DIR)/Inconsolata-Regular.ttf
+	echo 'unsigned char font_data[] = {' > $@
+	xxd -i - < $< >> $@
+	echo '};' >> $@
+
 # We do not want warnings and such for the generated code.
-libstupidart.o: libstupidart.c
+stupidart_wrapper.o: stupidart_wrapper.c
 	gcc -o $@ -c $< $(NOWARN_CFLAGS)
 
-libstupidart.c: $(PROG_FUT_DEPS)
-	futhark $(LYS_BACKEND) -o libstupidart --library $(FUT_SOURCE)
+stupidart_wrapper.c: $(PROG_FUT_DEPS)
+	futhark $(LYS_BACKEND) -o stupidart_wrapper --library $(FUT_SOURCE)
 endif
 
 clean:
-	rm -f stupidart libstupidart.o libstupidart.c libstupidart.h
+	rm -f stupidart stupidart_wrapper.o stupidart_wrapper.c stupidart_wrapper.h

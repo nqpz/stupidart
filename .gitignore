@@ -1,6 +1,6 @@
-/*.o
-/libstupidart.h
-/libstupidart.c
-/libstupidart.json
-/stupidart
 /lib
+/*.c
+/*.o
+/*.h
+stupidart
+stupidart_wrapper.json

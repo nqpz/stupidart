@@ -41,18 +41,17 @@ module mk_full_shape (o: shape) = {
       let (idx, diff) = index_and_diff c image_source_flat (j * hG, i * wG) (i32.i64 w) t (i32.i64 k)
       in (i64.i32 idx, c, diff)
     let (indices,colors,diffs) = unzip3 (expand sz get arg)
-    let image_approx' = unflatten h w (scatter (flatten image_approx) indices colors)
-    let image_diff' = unflatten h w (scatter (flatten image_diff) indices diffs)
+    let image_approx' = unflatten (scatter (flatten image_approx) indices colors)
+    let image_diff' = unflatten (scatter (flatten image_diff) indices diffs)
     let score = f32.sum (map (\(_, s) -> f32.max 0 s) arg)
     in (image_approx', image_diff', score)
 
   -- Parallelisation using gridification
-  let gridify 'b (G: i32) (rng: rng) (f:(i32, i32) -> rng -> b): []b =
-    let G' = i64.i32 G in
-    flatten <| map (\(yG, rng) ->
-                      map (\(xG, rng) -> f (yG, xG) rng)
-                          (indexed (rnge.split_rng G' rng))
-                   ) <| indexed (rnge.split_rng G' rng)
+  let gridify 'b (G: i64) (rng: rng) (f:(i32, i32) -> rng -> b): [G][G]b =
+    map (\(yG, rng) ->
+           map (\(xG, rng) -> f (yG, xG) rng)
+               (indexed (rnge.split_rng G rng))
+        ) <| indexed (rnge.split_rng G rng)
 
   -- Parallelising art generation
   --
@@ -73,19 +72,16 @@ module mk_full_shape (o: shape) = {
   let add [h][w] (count: i32) (image_source: [h][w]color) (image_approx: *[h][w]color)
                  (image_diff: *[h][w]f32) (rng: rng): (*[h][w]color, *[h][w]f32, f32) =
     let (rng, Gi) = dist_int.rand (0, i32.i64 (length Gs - 1)) rng
-    let G = Gs[Gi]
-    let G' = i64.i32 G
+    let G' = Gs[Gi]
+    let G = i64.i32 G'
     let n_tries = 500
-    let (hG, wG) = (i32.i64 h / G, i32.i64 w / G)
-    let grid_cells = i64.i32 (G * G)
-    let tries: [grid_cells][n_tries](i32, i32, o.t) =
-      gridify G rng (\(j, i) rng ->
-                       let rngs = rnge.split_rng n_tries rng
-                       let (ts, _) = unzip <| map (o.generate count hG wG) rngs
-                       in map (\t -> (j, i, t)) ts)
-              :> [grid_cells][n_tries](i32, i32, o.t)
+    let (hG, wG) = (i32.i64 h / G', i32.i64 w / G')
+    let tries = gridify G rng (\(j, i) rng ->
+                                 let rngs = rnge.split_rng n_tries rng
+                                 let (ts, _) = unzip <| map (o.generate count hG wG) rngs
+                                 in map (\t -> (j, i, t)) ts)
 
-    let flat_tries = flatten tries
+    let flat_tries = flatten_3d tries
     let sz (_, _, t: o.t): i64 = i64.i32 (o.n_points t)
     let get (j, i, t: o.t) (k: i64): f32 =
       (match o.coordinates t (i32.i64 k)
@@ -96,11 +92,10 @@ module mk_full_shape (o: shape) = {
        case #nothing -> 0)
     let flat_tries_with_scores =
       zip flat_tries <| expand_outer_reduce sz get (+) 0 flat_tries
-    let tries_with_scores: [G'][G'][n_tries]((i32, i32, o.t), f32) =
-      unflatten_3d G' G' n_tries flat_tries_with_scores
+    let tries_with_scores: [G][G][n_tries]((i32, i32, o.t), f32) =
+      unflatten_3d flat_tries_with_scores
     let best_try (tr0, s0) (tr1, s1) = if s0 > s1 then (tr0, s0) else (tr1, s1)
-    let best_tries: [grid_cells]((i32, i32, o.t), f32) =
-      (flatten <| map (map (reduce_comm best_try ((-1, -1, o.empty), -f32.inf)))
-                      tries_with_scores) :> [grid_cells]((i32, i32, o.t), f32)
+    let best_tries: [G * G]((i32, i32, o.t), f32) =
+      flatten <| map (map (reduce_comm best_try ((-1, -1, o.empty), -f32.inf))) tries_with_scores
     in render image_source image_approx (copy image_diff) (hG, wG) best_tries
 }

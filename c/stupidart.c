@@ -6,9 +6,9 @@
 #include <assert.h>
 
 #ifndef STUPIDART_NO_INTERACTIVE
-#include "lib/github.com/diku-dk/lys/liblys.h"
+#include "lib/github.com/diku-dk/lys/sdl/liblys.h"
 #else
-#include "lib/github.com/diku-dk/lys/context_setup.h"
+#include "lib/github.com/diku-dk/lys/shared.h"
 #endif
 
 #include <unistd.h>
