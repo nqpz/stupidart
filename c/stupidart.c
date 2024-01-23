@@ -251,7 +251,8 @@ int main(int argc, char** argv) {
   struct futhark_context_config *futcfg;
   struct futhark_context *futctx;
   char* opencl_device_name = NULL;
-  lys_setup_futhark_context(deviceopt, device_interactive,
+  lys_setup_futhark_context(argv[0],
+                            deviceopt, device_interactive,
                             &futcfg, &futctx, &opencl_device_name);
   if (opencl_device_name != NULL) {
     fprintf(stderr, "Using OpenCL device: %s\n", opencl_device_name);
