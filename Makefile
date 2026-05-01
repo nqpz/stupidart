@@ -40,7 +40,7 @@ stupidart: stupidart_wrapper.o stupidart_printf.h font_data.h $(FRONTEND_DIR)/li
 	gcc $(FRONTEND_DIR)/liblys.c $(SELF_DIR)/shared.c c/stupidart.c -I. -I$(SELF_DIR) -DPROGHEADER='"stupidart_wrapper.h"' -DPRINTFHEADER='"stupidart_printf.h"' stupidart_wrapper.o -o $@ $(CFLAGS) $(LDFLAGS) $(LDFLAGS_STUPIDART) $(CFLAGS_STUPIDART)
 endif
 
-stupidart_printf.h: stupidart_wrapper.c
+stupidart_printf.h: stupidart_wrapper.json
 	python3 $(SELF_DIR)/gen_printf.py $(FRONTEND_DIR) $@ $<
 
 font_data.h: $(SELF_DIR)/Inconsolata-Regular.ttf
